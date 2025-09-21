@@ -44,7 +44,7 @@ MediGo/
 ├── style.css              # スタイルシート
 ├── script.js              # ゲームロジック
 ├── README.md              # このファイル
-├── 画像ファイル/
+├── 画像ファイル
 │   ├── left_nodo.png      # 左向きノドグロ君
 │   ├── right_nodo.png     # 右向きノドグロ君
 │   ├── heart_nodo.gif     # ぶくぶく中ノドグロ君
@@ -53,9 +53,6 @@ MediGo/
 └── oyogenodogurokun.mp3   # 音声ファイル
 ```
 
-### 動作環境
-- 主要Webブラウザ（Chrome, Firefox, Safari, Edge）
-- モバイルブラウザ対応（タッチ操作）
 
 ## 🎨 ゲームの特徴
 
@@ -76,13 +73,6 @@ MediGo/
 - 複数の泳ぎパターンによる自然な動き
 - CSSトランジションとJavaScriptの組み合わせ
 
-## 📝 ライセンス
-
-このプロジェクトはMITライセンスの下で公開されています。
-
-## 🤝 貢献
-
-バグ報告や機能要望は、GitHubのIssuesでお知らせください。
 
 ---
 
