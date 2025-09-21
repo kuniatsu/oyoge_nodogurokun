@@ -29,6 +29,13 @@ body {
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
 }
 
+.fish-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
 .fish {
     position: absolute;
     width: 120px;
@@ -148,6 +155,36 @@ body {
     border-radius: 20px;
     border: 3px solid #ff4444;
     box-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+}
+
+.countdown {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.countdown.show {
+    opacity: 1;
+}
+
+.countdown p {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    margin: 0;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: 2px solid #ffffff;
+}
+
+.countdown-timer {
+    color: #ffeb3b;
+    font-size: 28px;
 }
 
 @keyframes pulse {

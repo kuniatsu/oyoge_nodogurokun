@@ -5,6 +5,9 @@ class NodoguroGame {
         this.bubbles = document.getElementById('bubbles');
         this.sufferingMessage = document.getElementById('suffering-message');
         this.bubblingSound = document.getElementById('bubbling-sound');
+        this.fishContainer = document.getElementById('fish-container');
+        this.countdown = document.getElementById('countdown');
+        this.countdownTimer = document.getElementById('countdown-timer');
         this.isBubbling = false;
         this.isSpacePressed = false;
         this.fishPosition = { x: 100, y: 200 };
@@ -20,6 +23,11 @@ class NodoguroGame {
         this.swimTimer = 0; // 泳ぎのタイマー
         this.swimPattern = 'normal'; // 泳ぎのパターン
         this.verticalOffset = 0; // 垂直方向のオフセット（波打つ動き用）
+        this.fishList = []; // 複数のノドグロ君を管理
+        this.countdownTime = 10; // カウントダウン時間
+        this.countdownInterval = null; // カウントダウン用のインターバル
+        this.maxFishCount = 10; // 最大ノドグロ君数
+        this.fishAddedThisSession = false; // 今回のぶくぶく中で追加済みか
         
         this.init();
     }
@@ -31,6 +39,7 @@ class NodoguroGame {
         this.startSwimming();
         this.startSufferingCheck();
         this.startAnimation();
+        this.initializeFishList();
     }
     
     setupEventListeners() {
@@ -141,31 +150,41 @@ class NodoguroGame {
     startAnimation() {
         const animate = () => {
             if (!this.isBubbling) {
-                this.updateFishPosition();
+                this.updateAllFishPositions();
+            } else {
+                this.updateAllFishBubbling();
             }
             this.animationId = requestAnimationFrame(animate);
         };
         animate();
     }
     
-    updateFishPosition() {
+    updateAllFishPositions() {
         if (!this.aquarium) return;
         
         this.swimTimer += 0.016; // 約60FPSを想定
         
+        this.fishList.forEach((fish, index) => {
+            this.updateSingleFishPosition(fish, index);
+        });
+    }
+    
+    updateSingleFishPosition(fish, index) {
+        if (!this.aquarium) return;
+        
         // 現在位置から目標位置に向かって滑らかに移動
-        const dx = this.targetPosition.x - this.fishPosition.x;
-        const dy = this.targetPosition.y - this.fishPosition.y;
+        const dx = fish.targetPosition.x - fish.position.x;
+        const dy = fish.targetPosition.y - fish.position.y;
         
         // 距離が小さい場合は新しい目標を設定
         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-            this.setRandomTarget();
+            this.setRandomTargetForFish(fish, index);
             return;
         }
         
         // パターンに応じた移動速度の調整
         let currentSpeed = this.swimSpeed;
-        switch (this.swimPattern) {
+        switch (fish.swimPattern || 'normal') {
             case 'lazy':
                 currentSpeed *= 0.5; // ゆっくり
                 break;
@@ -178,28 +197,161 @@ class NodoguroGame {
         }
         
         // 滑らかな移動
-        this.fishPosition.x += dx * currentSpeed;
-        this.fishPosition.y += dy * currentSpeed;
+        fish.position.x += dx * currentSpeed;
+        fish.position.y += dy * currentSpeed;
         
         // 波打つ動きを追加（自然な魚の動き）
-        this.verticalOffset = Math.sin(this.swimTimer * 3) * 2;
-        this.fishPosition.y += this.verticalOffset;
+        const verticalOffset = Math.sin(this.swimTimer * 3 + index) * 2;
+        fish.position.y += verticalOffset;
         
         // 水槽の境界内に制限
         const aquariumRect = this.aquarium.getBoundingClientRect();
-        const fishRect = this.fish.getBoundingClientRect();
+        const fishRect = fish.element.getBoundingClientRect();
         const maxX = Math.max(0, aquariumRect.width - fishRect.width);
         const maxY = Math.max(0, aquariumRect.height - fishRect.height);
         
-        this.fishPosition.x = Math.max(0, Math.min(maxX, this.fishPosition.x));
-        this.fishPosition.y = Math.max(0, Math.min(maxY, this.fishPosition.y));
+        fish.position.x = Math.max(0, Math.min(maxX, fish.position.x));
+        fish.position.y = Math.max(0, Math.min(maxY, fish.position.y));
         
         // 位置を更新
-        this.fish.style.left = this.fishPosition.x + 'px';
-        this.fish.style.top = this.fishPosition.y + 'px';
+        fish.element.style.left = fish.position.x + 'px';
+        fish.element.style.top = fish.position.y + 'px';
         
         // 画像を更新
-        this.updateFishImage();
+        this.updateSingleFishImage(fish);
+    }
+    
+    updateAllFishBubbling() {
+        if (!this.aquarium) return;
+        
+        this.fishList.forEach((fish, index) => {
+            this.updateSingleFishBubbling(fish, index);
+        });
+    }
+    
+    updateSingleFishBubbling(fish, index) {
+        if (!this.aquarium) return;
+        
+        // ぶくぶく中は気泡の発生源（右下）に向かって移動
+        const aquariumRect = this.aquarium.getBoundingClientRect();
+        const fishRect = fish.element.getBoundingClientRect();
+        
+        const targetX = Math.max(0, Math.min(aquariumRect.width - fishRect.width - 50, aquariumRect.width - fishRect.width));
+        const targetY = this.calculateVerticalPosition(index); // 縦並びを維持
+        
+        const dx = targetX - fish.position.x;
+        const dy = targetY - fish.position.y;
+        
+        // 滑らかに移動
+        fish.position.x += dx * 0.02;
+        fish.position.y += dy * 0.02;
+        
+        // 位置を更新
+        fish.element.style.left = fish.position.x + 'px';
+        fish.element.style.top = fish.position.y + 'px';
+        
+        // ハート画像に切り替え（一度だけ）
+        if (!fish.isBubblingImageSet) {
+            fish.image.src = 'heart_nodo.gif';
+            fish.isBubblingImageSet = true;
+        }
+    }
+    
+    setRandomTargetForFish(fish, index) {
+        if (!this.aquarium) return;
+        
+        const aquariumRect = this.aquarium.getBoundingClientRect();
+        const fishRect = fish.element.getBoundingClientRect();
+        
+        // 水槽の境界を考慮した移動範囲を計算
+        const minX = 0;
+        const minY = 0;
+        const maxX = Math.max(0, aquariumRect.width - fishRect.width);
+        const maxY = Math.max(0, aquariumRect.height - fishRect.height);
+        
+        // 泳ぎのパターンをランダムに選択
+        const patterns = ['normal', 'circular', 'zigzag', 'lazy'];
+        fish.swimPattern = patterns[Math.floor(Math.random() * patterns.length)];
+        
+        // パターンに応じて目標位置を設定
+        let targetX, targetY;
+        
+        switch (fish.swimPattern) {
+            case 'circular':
+                // 円形の動き
+                const centerX = aquariumRect.width / 2;
+                const centerY = aquariumRect.height / 2;
+                const radius = Math.min(aquariumRect.width, aquariumRect.height) / 4;
+                const angle = Math.random() * Math.PI * 2;
+                targetX = centerX + Math.cos(angle) * radius - fishRect.width / 2;
+                targetY = centerY + Math.sin(angle) * radius - fishRect.height / 2;
+                break;
+            case 'zigzag':
+                // ジグザグの動き
+                targetX = Math.random() * maxX;
+                targetY = fish.position.y + (Math.random() - 0.5) * 100;
+                break;
+            case 'lazy':
+                // ゆっくりとした動き
+                targetX = fish.position.x + (Math.random() - 0.5) * 50;
+                targetY = fish.position.y + (Math.random() - 0.5) * 50;
+                break;
+            default:
+                // 通常の動き
+                targetX = Math.random() * maxX;
+                targetY = Math.random() * maxY;
+        }
+        
+        // 境界内に制限
+        targetX = Math.max(minX, Math.min(maxX, targetX));
+        targetY = Math.max(minY, Math.min(maxY, targetY));
+        
+        fish.targetPosition = { x: targetX, y: targetY };
+        
+        // 移動方向を更新
+        if (targetX > fish.position.x) {
+            fish.swimDirection = 1;
+        } else {
+            fish.swimDirection = -1;
+        }
+    }
+    
+    updateSingleFishImage(fish) {
+        // ぶくぶく中は別の関数で処理するため、ここでは通常時と苦しみ時のみ処理
+        if (!this.isBubbling) {
+            if (this.isSuffering) {
+                // 現在の向きに応じて苦しみ画像を選択
+                const currentX = fish.position.x;
+                if (this.aquarium) {
+                    const aquariumRect = this.aquarium.getBoundingClientRect();
+                    const centerX = aquariumRect.width / 2;
+                    
+                    const targetImage = currentX > centerX ? 'right_nodo5.png' : 'left_nodo5.png';
+                    if (!fish.image.src.includes(targetImage)) {
+                        fish.image.src = targetImage;
+                    }
+                }
+            } else {
+                // 現在の向きに応じて通常画像を選択
+                const currentX = fish.position.x;
+                if (this.aquarium) {
+                    const aquariumRect = this.aquarium.getBoundingClientRect();
+                    const centerX = aquariumRect.width / 2;
+                    
+                    const targetImage = currentX > centerX ? 'right_nodo.png' : 'left_nodo.png';
+                    if (!fish.image.src.includes(targetImage)) {
+                        fish.image.src = targetImage;
+                    }
+                }
+            }
+        }
+    }
+    
+    updateAllFishSufferingState(isSuffering) {
+        this.fishList.forEach(fish => {
+            fish.isSuffering = isSuffering;
+            this.updateSingleFishImage(fish);
+        });
     }
     
     startBubbling() {
@@ -210,6 +362,13 @@ class NodoguroGame {
         this.isSuffering = false;
         this.hideSufferingMessage();
         this.playBubblingSound();
+        this.fishAddedThisSession = false; // 新しいぶくぶく中セッション開始
+        this.startCountdown();
+        
+        // 全ノドグロ君のぶくぶく中フラグをリセット
+        this.fishList.forEach(fish => {
+            fish.isBubblingImageSet = false;
+        });
         
         this.fish.classList.remove('swimming');
         this.fish.classList.add('moving-to-bubbles');
@@ -231,6 +390,9 @@ class NodoguroGame {
         this.fish.classList.remove('moving-to-bubbles');
         this.fish.classList.add('swimming');
         
+        // 苦しみタイマーをリセット（ぶくぶく中終了時）
+        this.lastBubbleTime = Date.now();
+        
         // 通常の画像に戻す（苦しみ状態を考慮）
         if (this.isSuffering) {
             this.fishImage.src = 'left_nodo5.png';
@@ -241,6 +403,12 @@ class NodoguroGame {
         // 気泡アニメーション停止
         this.stopBubbleAnimation();
         this.stopBubblingSound();
+        this.stopCountdown();
+        
+        // 全ノドグロ君のぶくぶく中フラグをリセット
+        this.fishList.forEach(fish => {
+            fish.isBubblingImageSet = false;
+        });
     }
     
     moveToBubbleSource() {
@@ -323,11 +491,11 @@ class NodoguroGame {
             if (timeSinceLastBubble >= 5000 && !this.isBubbling) {
                 this.isSuffering = true;
                 this.showSufferingMessage();
-                this.updateFishImage();
+                this.updateAllFishSufferingState(true);
             } else if (timeSinceLastBubble < 5000 && this.isSuffering) {
                 this.isSuffering = false;
                 this.hideSufferingMessage();
-                this.updateFishImage();
+                this.updateAllFishSufferingState(false);
             }
         }, 1000); // 1秒ごとにチェック
     }
@@ -390,6 +558,134 @@ class NodoguroGame {
             this.bubblingSound.pause();
             this.bubblingSound.currentTime = 0;
         }
+    }
+    
+    initializeFishList() {
+        // 最初のノドグロ君をリストに追加
+        this.fishList = [{
+            element: this.fish,
+            image: this.fishImage,
+            position: this.fishPosition,
+            targetPosition: this.targetPosition,
+            isSuffering: false,
+            swimDirection: 1
+        }];
+    }
+    
+    startCountdown() {
+        if (this.countdownInterval) return;
+        
+        this.countdownTime = 10;
+        this.countdown.classList.add('show');
+        this.updateCountdownDisplay();
+        
+        this.countdownInterval = setInterval(() => {
+            this.countdownTime--;
+            this.updateCountdownDisplay();
+            
+            if (this.countdownTime <= 0) {
+                if (!this.fishAddedThisSession && this.fishList.length < this.maxFishCount) {
+                    this.addNewFish();
+                    this.fishAddedThisSession = true; // 今回のセッションで追加済み
+                }
+                // カウントダウンを非表示にする
+                this.countdown.classList.remove('show');
+                clearInterval(this.countdownInterval);
+                this.countdownInterval = null;
+            }
+        }, 1000);
+    }
+    
+    stopCountdown() {
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+        this.countdown.classList.remove('show');
+    }
+    
+    updateCountdownDisplay() {
+        if (this.countdownTimer) {
+            if (this.fishList.length >= this.maxFishCount) {
+                this.countdownTimer.textContent = '最大数に達しました';
+            } else if (this.fishAddedThisSession) {
+                this.countdownTimer.textContent = '追加済み';
+            } else if (this.countdownTime > 0) {
+                this.countdownTimer.textContent = this.countdownTime;
+            } else {
+                this.countdownTimer.textContent = '0';
+            }
+        }
+    }
+    
+    addNewFish() {
+        if (!this.aquarium || !this.fishContainer || this.fishList.length >= this.maxFishCount) return;
+        
+        // 新しいノドグロ君の要素を作成
+        const newFishElement = document.createElement('div');
+        newFishElement.className = 'fish';
+        
+        const newFishImage = document.createElement('img');
+        newFishImage.src = 'left_nodo.png';
+        newFishImage.alt = 'ノドグロ君';
+        
+        newFishElement.appendChild(newFishImage);
+        this.fishContainer.appendChild(newFishElement);
+        
+        // 左から登場するアニメーション
+        const aquariumRect = this.aquarium.getBoundingClientRect();
+        const fishRect = newFishElement.getBoundingClientRect();
+        
+        const startX = -fishRect.width;
+        const startY = this.calculateVerticalPosition(this.fishList.length);
+        
+        newFishElement.style.left = startX + 'px';
+        newFishElement.style.top = startY + 'px';
+        
+        // スライドインアニメーション
+        setTimeout(() => {
+            const targetX = this.calculateHorizontalPosition();
+            newFishElement.style.transition = 'left 1s ease-out';
+            newFishElement.style.left = targetX + 'px';
+        }, 100);
+        
+        // 魚リストに追加
+        const newFish = {
+            element: newFishElement,
+            image: newFishImage,
+            position: { x: startX, y: startY },
+            targetPosition: { x: 0, y: startY },
+            isSuffering: false,
+            swimDirection: 1,
+            swimPattern: 'normal'
+        };
+        
+        this.fishList.push(newFish);
+        
+        // カウントダウン表示を更新
+        this.updateCountdownDisplay();
+    }
+    
+    calculateVerticalPosition(index) {
+        if (!this.aquarium) return 200;
+        
+        const aquariumRect = this.aquarium.getBoundingClientRect();
+        const fishHeight = 90;
+        const spacing = 20; // 魚同士の間隔
+        
+        const totalHeight = (fishHeight + spacing) * this.fishList.length;
+        const startY = (aquariumRect.height - totalHeight) / 2;
+        
+        return startY + (fishHeight + spacing) * index;
+    }
+    
+    calculateHorizontalPosition() {
+        if (!this.aquarium) return 100;
+        
+        const aquariumRect = this.aquarium.getBoundingClientRect();
+        const fishWidth = 120;
+        
+        return Math.random() * (aquariumRect.width - fishWidth);
     }
 }
 
