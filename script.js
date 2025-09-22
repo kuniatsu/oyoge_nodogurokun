@@ -23,10 +23,10 @@ class NodoguroGame {
         this.swimTimer = 0; // 泳ぎのタイマー
         this.swimPattern = 'normal'; // 泳ぎのパターン
         this.verticalOffset = 0; // 垂直方向のオフセット（波打つ動き用）
-        this.fishList = []; // 複数のノドグロ君を管理
+        this.fishList = []; // 複数ののどぐろ君を管理
         this.countdownTime = 10; // カウントダウン時間
         this.countdownInterval = null; // カウントダウン用のインターバル
-        this.maxFishCount = 10; // 最大ノドグロ君数
+        this.maxFishCount = 10; // 最大のどぐろ君数
         this.fishAddedThisSession = false; // 今回のぶくぶく中で追加済みか
         
         this.init();
@@ -365,7 +365,7 @@ class NodoguroGame {
         this.fishAddedThisSession = false; // 新しいぶくぶく中セッション開始
         this.startCountdown();
         
-        // 全ノドグロ君のぶくぶく中フラグをリセット
+        // 全のどぐろ君のぶくぶく中フラグをリセット
         this.fishList.forEach(fish => {
             fish.isBubblingImageSet = false;
         });
@@ -405,7 +405,7 @@ class NodoguroGame {
         this.stopBubblingSound();
         this.stopCountdown();
         
-        // 全ノドグロ君のぶくぶく中フラグをリセット
+        // 全のどぐろ君のぶくぶく中フラグをリセット
         this.fishList.forEach(fish => {
             fish.isBubblingImageSet = false;
         });
@@ -561,7 +561,7 @@ class NodoguroGame {
     }
     
     initializeFishList() {
-        // 最初のノドグロ君をリストに追加
+        // 最初ののどぐろ君をリストに追加
         this.fishList = [{
             element: this.fish,
             image: this.fishImage,
@@ -621,13 +621,13 @@ class NodoguroGame {
     addNewFish() {
         if (!this.aquarium || !this.fishContainer || this.fishList.length >= this.maxFishCount) return;
         
-        // 新しいノドグロ君の要素を作成
+        // 新しいのどぐろ君の要素を作成
         const newFishElement = document.createElement('div');
         newFishElement.className = 'fish';
         
         const newFishImage = document.createElement('img');
         newFishImage.src = 'left_nodo.png';
-        newFishImage.alt = 'ノドグロ君';
+        newFishImage.alt = 'のどぐろ君';
         
         newFishElement.appendChild(newFishImage);
         this.fishContainer.appendChild(newFishElement);
@@ -687,6 +687,7 @@ class NodoguroGame {
         
         return Math.random() * (aquariumRect.width - fishWidth);
     }
+    
 }
 
 // ゲーム開始
