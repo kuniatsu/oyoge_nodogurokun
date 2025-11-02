@@ -71,10 +71,13 @@ class NodoguroGame {
         });
         
         // タッチデバイス対応（画面全体でダブルタップ+長押し）
-        // 画面全体（bodyまたはaquarium）にイベントリスナーを設定
-        const touchTarget = this.aquarium || document.body;
+        // 画面全体にイベントリスナーを設定（bodyに直接設定）
+        const touchTarget = document.body;
+        
+        console.log('タッチイベントリスナーを設定します', touchTarget);
         
         touchTarget.addEventListener('touchstart', (e) => {
+            console.log('touchstart detected', e.touches.length);
             this.handleTouchStart(e);
         }, { passive: false });
         
@@ -83,10 +86,12 @@ class NodoguroGame {
         }, { passive: false });
         
         touchTarget.addEventListener('touchend', (e) => {
+            console.log('touchend detected');
             this.handleTouchEnd(e);
         }, { passive: false });
         
         touchTarget.addEventListener('touchcancel', (e) => {
+            console.log('touchcancel detected');
             this.handleTouchEnd(e);
         }, { passive: false });
     }
@@ -428,12 +433,25 @@ class NodoguroGame {
     
     // タッチイベントハンドラー
     handleTouchStart(e) {
+        if (!e.touches || e.touches.length === 0) {
+            console.warn('touchstart: タッチ情報がありません');
+            return;
+        }
+        
         const currentTime = Date.now();
         const touch = e.touches[0];
+        const timeSinceLastTap = currentTime - this.lastTapTime;
+        
+        console.log('handleTouchStart:', {
+            timeSinceLastTap,
+            isDoubleTap: timeSinceLastTap < this.doubleTapThreshold,
+            lastTapTime: this.lastTapTime
+        });
         
         // ダブルタップの検出
-        if (currentTime - this.lastTapTime < this.doubleTapThreshold) {
+        if (timeSinceLastTap < this.doubleTapThreshold && this.lastTapTime > 0) {
             // ダブルタップ検出
+            console.log('ダブルタップ検出！長押しモード開始');
             this.isDoubleTapDetected = true;
             this.lastTapTime = 0; // リセット
             
@@ -446,15 +464,22 @@ class NodoguroGame {
             
             // 長押し開始を監視
             this.longPressTimeout = setTimeout(() => {
+                console.log('長押しタイマー発火', {
+                    isDoubleTapDetected: this.isDoubleTapDetected,
+                    isLongPressing: this.isLongPressing,
+                    isBubbling: this.isBubbling
+                });
                 if (this.isDoubleTapDetected && !this.isLongPressing) {
                     this.isLongPressing = true;
                     if (!this.isBubbling) {
+                        console.log('ぶくぶくモード開始！');
                         this.startBubbling();
                     }
                 }
             }, this.longPressThreshold);
         } else {
             // シングルタップ（まだダブルタップではない）
+            console.log('シングルタップ（ダブルタップ待機中）');
             this.isDoubleTapDetected = false;
             this.isLongPressing = false;
             this.lastTapTime = currentTime;
