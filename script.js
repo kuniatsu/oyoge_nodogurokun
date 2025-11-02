@@ -29,6 +29,16 @@ class NodoguroGame {
         this.maxFishCount = 10; // 最大のどぐろ君数
         this.fishAddedThisSession = false; // 今回のぶくぶく中で追加済みか
         
+        // タッチイベント用の変数
+        this.lastTapTime = 0; // 前回のタップ時間
+        this.doubleTapThreshold = 500; // ダブルタップ判定の時間（ms）
+        this.isDoubleTapDetected = false; // ダブルタップが検出されたか
+        this.isLongPressing = false; // 長押し中か
+        this.touchStartTime = 0; // タッチ開始時間
+        this.longPressThreshold = 100; // 長押し開始と判断する時間（ms）
+        this.touchStartPosition = null; // タッチ開始位置
+        this.longPressTimeout = null; // 長押しタイムアウトID
+        
         this.init();
     }
     
@@ -60,20 +70,25 @@ class NodoguroGame {
             }
         });
         
-        // タッチデバイス対応
-        this.fish.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            if (!this.isSpacePressed) {
-                this.isSpacePressed = true;
-                this.startBubbling();
-            }
-        });
+        // タッチデバイス対応（画面全体でダブルタップ+長押し）
+        // 画面全体（bodyまたはaquarium）にイベントリスナーを設定
+        const touchTarget = this.aquarium || document.body;
         
-        this.fish.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            this.isSpacePressed = false;
-            this.stopBubbling();
-        });
+        touchTarget.addEventListener('touchstart', (e) => {
+            this.handleTouchStart(e);
+        }, { passive: false });
+        
+        touchTarget.addEventListener('touchmove', (e) => {
+            this.handleTouchMove(e);
+        }, { passive: false });
+        
+        touchTarget.addEventListener('touchend', (e) => {
+            this.handleTouchEnd(e);
+        }, { passive: false });
+        
+        touchTarget.addEventListener('touchcancel', (e) => {
+            this.handleTouchEnd(e);
+        }, { passive: false });
     }
     
     startSwimming() {
@@ -409,6 +424,86 @@ class NodoguroGame {
         this.fishList.forEach(fish => {
             fish.isBubblingImageSet = false;
         });
+    }
+    
+    // タッチイベントハンドラー
+    handleTouchStart(e) {
+        const currentTime = Date.now();
+        const touch = e.touches[0];
+        
+        // ダブルタップの検出
+        if (currentTime - this.lastTapTime < this.doubleTapThreshold) {
+            // ダブルタップ検出
+            this.isDoubleTapDetected = true;
+            this.lastTapTime = 0; // リセット
+            
+            // 2回目のタップから長押し開始
+            this.touchStartTime = currentTime;
+            this.touchStartPosition = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
+            
+            // 長押し開始を監視
+            this.longPressTimeout = setTimeout(() => {
+                if (this.isDoubleTapDetected && !this.isLongPressing) {
+                    this.isLongPressing = true;
+                    if (!this.isBubbling) {
+                        this.startBubbling();
+                    }
+                }
+            }, this.longPressThreshold);
+        } else {
+            // シングルタップ（まだダブルタップではない）
+            this.isDoubleTapDetected = false;
+            this.isLongPressing = false;
+            this.lastTapTime = currentTime;
+        }
+        
+        // デフォルトの動作を防止（スクロール防止など）
+        e.preventDefault();
+    }
+    
+    handleTouchMove(e) {
+        if (!this.isDoubleTapDetected || !this.touchStartPosition) return;
+        
+        const touch = e.touches[0];
+        const moveDistance = Math.sqrt(
+            Math.pow(touch.clientX - this.touchStartPosition.x, 2) +
+            Math.pow(touch.clientY - this.touchStartPosition.y, 2)
+        );
+        
+        // 指が大きく動いた場合は長押しをキャンセル
+        if (moveDistance > 30) { // 30px以上移動したらキャンセル
+            this.cancelLongPress();
+        }
+        
+        e.preventDefault();
+    }
+    
+    handleTouchEnd(e) {
+        // 長押しを停止
+        this.cancelLongPress();
+        
+        // 状態をリセット
+        this.isDoubleTapDetected = false;
+        this.isLongPressing = false;
+        this.touchStartPosition = null;
+        
+        // ぶくぶくを停止
+        if (this.isBubbling) {
+            this.stopBubbling();
+        }
+        
+        e.preventDefault();
+    }
+    
+    cancelLongPress() {
+        if (this.longPressTimeout) {
+            clearTimeout(this.longPressTimeout);
+            this.longPressTimeout = null;
+        }
+        this.isLongPressing = false;
     }
     
     moveToBubbleSource() {
