@@ -3,47 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>のどぐろ君の水槽ゲーム</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="camera.css">
+    <title>のどぐろ君 - 統合画面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .left-panel {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .right-panel {
+            width: 400px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: auto;
+        }
+
+        .right-panel h2 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        #webcam-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        #guide-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        #label-container {
+            width: 100%;
+        }
+
+        #label-container div {
+            margin: 10px 0;
+            font-size: 1em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 20px;
+            background-color: #e0e0e0;
+            margin: 5px auto;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.1s ease-out;
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="aquarium">
-            <div class="bubbles" id="bubbles"></div>
-            <div class="fish-container" id="fish-container">
-                <div class="fish" id="fish">
-                    <img src="left_nodo.png" alt="のどぐろ君" id="fish-image">
-                </div>
-            </div>
-            <div class="countdown" id="countdown">
-                <p>のどぐろ君登場まで: <span id="countdown-timer">10</span>秒</p>
-            </div>
-            <div class="suffering-message" id="suffering-message">
-                <p>のどぐろ君を助けて！</p>
-            </div>
-            
-            <!-- カメラ映像表示エリア（水槽内右上） -->
-            <div class="camera-section">
-                <div class="camera-container">
-                    <video id="camera-video" autoplay muted playsinline></video>
-                    <div class="camera-overlay">
-                        <p>カメラを開始</p>
-                    </div>
-                </div>
-                <button id="camera-toggle" class="camera-button">カメラを開始</button>
-            </div>
+    <div class="container">
+        <!-- 左側: のどぐろ君のゲーム画面 -->
+        <div class="left-panel">
+            <iframe src="index_f.html"></iframe>
         </div>
 
+        <!-- 右側: 吹き戻し判別AI -->
+        <div class="right-panel">
+            <h2>吹き戻し判別AI</h2>
+            <div id="webcam-container"></div>
+            <div id="label-container"></div>
+        </div>
     </div>
-    
-    <!-- 音声ファイル -->
-    <audio id="bubbling-sound" preload="auto" loop>
-        <source src="oyogenodogurokun.mp3" type="audio/mpeg">
-        お使いのブラウザは音声再生をサポートしていません。
-    </audio>
-    
-    <script src="script.js"></script>
-    <script src="camera.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+    <script type="text/javascript">
+        // 🚨 YOUR MODEL LINK (エクスポート画面で取得した共有リンク)
+        const URL = "https://teachablemachine.withgoogle.com/models/-aH0GSF4l/";
+
+        let model, webcam, labelContainer, maxPredictions;
+
+        // ページロード時に自動実行
+        window.onload = init;
+
+        // モデルのロードとWebカメラのセットアップ
+        async function init() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // モデルとメタデータのロード
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            // Webカメラのセットアップ
+            const flip = true;
+            webcam = new tmImage.Webcam(320, 240, flip); // サイズを調整 (320x240)
+            await webcam.setup();
+            await webcam.play();
+
+            // WebカメラのキャンバスをDOMに追加
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+            // ガイドライン用のCanvasを作成して追加
+            const guideCanvas = document.createElement("canvas");
+            guideCanvas.id = "guide-canvas";
+            guideCanvas.width = 320;
+            guideCanvas.height = 240;
+            document.getElementById("webcam-container").appendChild(guideCanvas);
+
+            // 人の形のガイドラインを描画
+            drawGuide(guideCanvas);
+
+            labelContainer = document.getElementById("label-container");
+
+            // 予測結果表示用の要素（クラス名とプログレスバー）を作成
+            for (let i = 0; i < maxPredictions; i++) {
+                const classDiv = document.createElement("div");
+                const progressBarDiv = document.createElement("div");
+                progressBarDiv.className = "progress-bar";
+                const progressFillDiv = document.createElement("div");
+                progressFillDiv.className = "progress-fill";
+                progressFillDiv.id = `progress-fill-${i}`; // IDを設定
+
+                progressBarDiv.appendChild(progressFillDiv);
+
+                classDiv.appendChild(document.createElement("span")); // クラス名用
+                classDiv.appendChild(progressBarDiv);
+
+                labelContainer.appendChild(classDiv);
+            }
+
+            // 予測ループの開始
+            window.requestAnimationFrame(loop);
+        }
+
+        async function loop() {
+            webcam.update();
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+
+        // 予測の実行と結果の表示
+        async function predict() {
+            const prediction = await model.predict(webcam.canvas);
+
+            for (let i = 0; i < maxPredictions; i++) {
+                const className = prediction[i].className;
+                const probability = prediction[i].probability.toFixed(2); // 0.00 to 1.00
+                const percent = Math.round(probability * 100);
+
+                // クラス名と確率の表示
+                const classElement = labelContainer.childNodes[i].querySelector('span');
+                classElement.innerHTML = `${className}: ${percent}%`;
+
+                // プログレスバーの更新
+                const fillElement = document.getElementById(`progress-fill-${i}`);
+                fillElement.style.width = `${percent}%`;
+            }
+        }
+
+        // バストアップのガイドラインを描画する関数
+        function drawGuide(canvas) {
+            const ctx = canvas.getContext("2d");
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // 中心位置（右に寄せる）
+            const centerX = width * 0.65;
+            const centerY = height * 0.45;
+
+            // ガイドラインのスタイル設定
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+            ctx.lineWidth = 2;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            // 横顔（左向き）のシルエットを2つの楕円で描画
+            const radiusX_upper = width * 0.28;  // 上の楕円の横幅（鼻が突き出る）
+            const radiusY = width * 0.30;  // 楕円の縦幅
+            const radiusX_lower = width * 0.24;  // 下の楕円の横幅
+
+            // 下の楕円の中心位置（右端を上の楕円と揃えるため右にずらす）
+            const centerX_lower = centerX + (radiusX_upper - radiusX_lower);
+
+            // 上半分の楕円（額から鼻）
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, radiusX_upper, radiusY, 0, Math.PI, 0, false);
+            ctx.stroke();
+
+            // 下半分の楕円（鼻から顎）
+            ctx.beginPath();
+            ctx.ellipse(centerX_lower, centerY, radiusX_lower, radiusY, 0, 0, Math.PI, false);
+            ctx.stroke();
+
+            // 上の楕円の左端
+            const upperLeftX = centerX - radiusX_upper;
+            const upperLeftY = centerY;
+
+            // 下の楕円の左端
+            const lowerLeftX = centerX_lower - radiusX_lower;
+            const lowerLeftY = centerY;
+
+            // 鼻のライン（上の楕円の左端から下の楕円の左端へ）
+            ctx.beginPath();
+            ctx.moveTo(upperLeftX, upperLeftY);
+            ctx.lineTo(lowerLeftX, lowerLeftY);
+            ctx.stroke();
+
+            // 吹き戻しのライン（口の位置から左に長く伸びる）
+            const mouthY = centerY + radiusY * 0.4;  // 鼻のラインより下（口の位置）
+            const mouthStartX = centerX_lower - radiusX_lower * 0.7;  // 顔の輪郭より少し内側
+            const blowoutLength = width * 0.5;  // 吹き戻しの長さ
+
+            ctx.beginPath();
+            ctx.moveTo(mouthStartX, mouthY);
+            ctx.lineTo(mouthStartX - blowoutLength, mouthY);
+            ctx.stroke();
+
+            // ガイドテキストを追加
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.font = "14px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("この枠内に横顔が", centerX, height - 25);
+            ctx.fillText("収まるように調整してください", centerX, height - 10);
+        }
+    </script>
 </body>
 </html>
