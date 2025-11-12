@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>のどぐろ君の水槽ゲーム</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="camera.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="aquarium">
+            <div class="bubbles" id="bubbles"></div>
+            <div class="fish-container" id="fish-container">
+                <div class="fish" id="fish">
+                    <img src="left_nodo.png" alt="のどぐろ君" id="fish-image">
+                </div>
+            </div>
+            <div class="countdown" id="countdown">
+                <p>のどぐろ君登場まで: <span id="countdown-timer">10</span>秒</p>
+            </div>
+            <div class="suffering-message" id="suffering-message">
+                <p>のどぐろ君を助けて！</p>
+            </div>
+            
+            <!-- カメラ映像表示エリア（水槽内右上） -->
+            <div class="camera-section">
+                <div class="camera-container">
+                    <video id="camera-video" autoplay muted playsinline></video>
+                    <div class="camera-overlay">
+                        <p>カメラを開始</p>
+                    </div>
+                </div>
+                <button id="camera-toggle" class="camera-button">カメラを開始</button>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- 音声ファイル -->
+    <audio id="bubbling-sound" preload="auto" loop>
+        <source src="oyogenodogurokun.mp3" type="audio/mpeg">
+        お使いのブラウザは音声再生をサポートしていません。
+    </audio>
+    
+    <script src="script.js"></script>
+    <script src="camera.js"></script>
+</body>
+</html>
