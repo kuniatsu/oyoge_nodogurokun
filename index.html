@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>のどぐろ君 - 統合画面</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="camera.css">
     <style>
         * {
             margin: 0;
@@ -24,7 +26,26 @@
 
         .left-panel {
             flex: 1;
-            overflow: auto;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .left-panel audio {
+            position: absolute;
+            visibility: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .aquarium {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
         }
 
         .right-panel {
@@ -80,18 +101,44 @@
             transition: width 0.1s ease-out;
         }
 
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- 左側: のどぐろ君のゲーム画面 -->
         <div class="left-panel">
-            <iframe src="index_f.html"></iframe>
+            <div class="game-container">
+                <div class="aquarium">
+                    <div class="bubbles" id="bubbles"></div>
+                    <div class="fish-container" id="fish-container">
+                        <div class="fish" id="fish">
+                            <img src="left_nodo.png" alt="のどぐろ君" id="fish-image">
+                        </div>
+                    </div>
+                    <div class="countdown" id="countdown">
+                        <p>のどぐろ君登場まで: <span id="countdown-timer">10</span>秒</p>
+                    </div>
+                    <div class="suffering-message" id="suffering-message">
+                        <p>のどぐろ君を助けて！</p>
+                    </div>
+
+                    <!-- カメラ映像表示エリア（水槽内右上） -->
+                    <div class="camera-section">
+                        <div class="camera-container">
+                            <video id="camera-video" autoplay muted playsinline></video>
+                            <div class="camera-overlay">
+                                <p>カメラを開始</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 音声ファイル -->
+            <audio id="bubbling-sound" preload="auto" loop>
+                <source src="oyogenodogurokun.mp3" type="audio/mpeg">
+                お使いのブラウザは音声再生をサポートしていません。
+            </audio>
         </div>
 
         <!-- 右側: 吹き戻し判別AI -->
@@ -104,6 +151,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script src="script.js"></script>
+    <script src="camera.js"></script>
 
     <script type="text/javascript">
         // 🚨 YOUR MODEL LINK (エクスポート画面で取得した共有リンク)
@@ -112,7 +161,7 @@
         let model, webcam, labelContainer, maxPredictions;
 
         // ページロード時に自動実行
-        window.onload = init;
+        window.addEventListener('load', init);
 
         // モデルのロードとWebカメラのセットアップ
         async function init() {
@@ -175,6 +224,8 @@
         async function predict() {
             const prediction = await model.predict(webcam.canvas);
 
+            let isBlowingDetected = false;
+
             for (let i = 0; i < maxPredictions; i++) {
                 const className = prediction[i].className;
                 const probability = prediction[i].probability.toFixed(2); // 0.00 to 1.00
@@ -187,6 +238,21 @@
                 // プログレスバーの更新
                 const fillElement = document.getElementById(`progress-fill-${i}`);
                 fillElement.style.width = `${percent}%`;
+
+                // デバッグ用ログ
+                console.log(`クラス名: "${className}", 確率: ${percent}%`);
+
+                // 「吹き戻しが伸びている」が80%以上の場合
+                if (className.includes("伸びている") && percent >= 80) {
+                    console.log("吹き戻しを検出！", className, percent);
+                    isBlowingDetected = true;
+                }
+            }
+
+            // ゲームにAI判定結果を通知
+            console.log("nodoguroGame:", nodoguroGame, "isBlowingDetected:", isBlowingDetected);
+            if (nodoguroGame) {
+                nodoguroGame.setAIBlowing(isBlowingDetected);
             }
         }
 

@@ -35,7 +35,10 @@ class NodoguroGame {
         this.longPressThreshold = 300; // 長押し開始と判断する時間（ms）
         this.touchStartPosition = null; // タッチ開始位置
         this.longPressTimeout = null; // 長押しタイムアウトID
-        
+
+        // AI判定用の変数
+        this.isAIBlowing = false; // AIで吹き戻しを検出中か
+
         this.init();
     }
     
@@ -55,15 +58,15 @@ class NodoguroGame {
             if (e.code === 'Space' && !this.isSpacePressed) {
                 e.preventDefault();
                 this.isSpacePressed = true;
-                this.startBubbling();
+                this.updateBubblingState();
             }
         });
-        
+
         document.addEventListener('keyup', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
                 this.isSpacePressed = false;
-                this.stopBubbling();
+                this.updateBubblingState();
             }
         });
         
@@ -438,9 +441,9 @@ class NodoguroGame {
         
         // 長押し検出のタイマーを開始
         this.longPressTimeout = setTimeout(() => {
-            if (!this.isLongPressing && !this.isBubbling) {
+            if (!this.isLongPressing) {
                 this.isLongPressing = true;
-                this.startBubbling();
+                this.updateBubblingState();
             }
         }, this.longPressThreshold);
         
@@ -473,16 +476,14 @@ class NodoguroGame {
     handleTouchEnd(e) {
         // 長押しを停止
         this.cancelLongPress();
-        
+
         // 状態をリセット
         this.isLongPressing = false;
         this.touchStartPosition = null;
-        
-        // ぶくぶくを停止
-        if (this.isBubbling) {
-            this.stopBubbling();
-        }
-        
+
+        // ぶくぶく状態を更新
+        this.updateBubblingState();
+
         e.preventDefault();
     }
     
@@ -764,16 +765,34 @@ class NodoguroGame {
     
     calculateHorizontalPosition() {
         if (!this.aquarium) return 100;
-        
+
         const aquariumRect = this.aquarium.getBoundingClientRect();
         const fishWidth = 120;
-        
+
         return Math.random() * (aquariumRect.width - fishWidth);
     }
-    
+
+    // AIからの吹き戻し判定を受け取る
+    setAIBlowing(isBlowing) {
+        this.isAIBlowing = isBlowing;
+        this.updateBubblingState();
+    }
+
+    // ぶくぶく中の状態を更新（スペース、長押し、AI判定のいずれかがアクティブならぶくぶく中）
+    updateBubblingState() {
+        const shouldBubble = this.isSpacePressed || this.isLongPressing || this.isAIBlowing;
+
+        if (shouldBubble && !this.isBubbling) {
+            this.startBubbling();
+        } else if (!shouldBubble && this.isBubbling) {
+            this.stopBubbling();
+        }
+    }
+
 }
 
 // ゲーム開始
+let nodoguroGame = null;
 document.addEventListener('DOMContentLoaded', () => {
-    new NodoguroGame();
+    nodoguroGame = new NodoguroGame();
 });
