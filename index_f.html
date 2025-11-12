@@ -6,8 +6,66 @@
     <title>のどぐろ君の水槽ゲーム</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="camera.css">
+    <style>
+        /* 画面向きロック用オーバーレイ */
+        #orientation-lock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #orientation-lock-overlay.show {
+            display: flex;
+        }
+
+        .orientation-lock-content {
+            text-align: center;
+            color: white;
+        }
+
+        .orientation-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: rotate-phone 2s ease-in-out infinite;
+        }
+
+        .orientation-message {
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+
+        @keyframes rotate-phone {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-15deg);
+            }
+            75% {
+                transform: rotate(15deg);
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- 画面向きロックオーバーレイ -->
+    <div id="orientation-lock-overlay">
+        <div class="orientation-lock-content">
+            <div class="orientation-icon">📱↻</div>
+            <div class="orientation-message">
+                スマホの向きを横向きにして下さい
+            </div>
+        </div>
+    </div>
     <div class="game-container">
         <div class="aquarium">
             <div class="bubbles" id="bubbles"></div>
@@ -44,5 +102,39 @@
     
     <script src="script.js"></script>
     <script src="camera.js"></script>
+
+    <script>
+        // 画面向きチェック機能
+        const orientationOverlay = document.getElementById('orientation-lock-overlay');
+        const gameContainer = document.querySelector('.game-container');
+
+        function checkOrientation() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            // 縦向き（縦幅 > 横幅）の場合
+            if (height > width) {
+                orientationOverlay.classList.add('show');
+                // ゲームコンテナの操作を無効化
+                if (gameContainer) {
+                    gameContainer.style.pointerEvents = 'none';
+                }
+            } else {
+                // 横向きの場合
+                orientationOverlay.classList.remove('show');
+                // ゲームコンテナの操作を有効化
+                if (gameContainer) {
+                    gameContainer.style.pointerEvents = 'auto';
+                }
+            }
+        }
+
+        // 初期チェック
+        checkOrientation();
+
+        // 画面サイズ変更時とデバイス向き変更時にチェック
+        window.addEventListener('resize', checkOrientation);
+        window.addEventListener('orientationchange', checkOrientation);
+    </script>
 </body>
 </html>
