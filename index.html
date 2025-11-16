@@ -213,8 +213,8 @@
     <script src="camera.js"></script>
 
     <script type="text/javascript">
-        // 🚨 YOUR MODEL LINK (エクスポート画面で取得した共有リンク)
-        const URL = "https://teachablemachine.withgoogle.com/models/-aH0GSF4l/";
+        // 🚨 ローカルモデルファイルを使用
+        const MODEL_PATH = "./model/";
 
         let model, webcam, labelContainer, maxPredictions;
 
@@ -223,8 +223,8 @@
 
         // モデルのロードとWebカメラのセットアップ
         async function init() {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
+            const modelURL = MODEL_PATH + "model.json";
+            const metadataURL = MODEL_PATH + "metadata.json";
 
             // モデルとメタデータのロード
             model = await tmImage.load(modelURL, metadataURL);
