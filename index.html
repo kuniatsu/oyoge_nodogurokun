@@ -65,7 +65,7 @@
 
         #webcam-container {
             position: relative;
-            display: inline-block;
+            width: 100%;
             margin-bottom: 15px;
         }
 
@@ -201,7 +201,6 @@
 
         <!-- 右側: 吹き戻し判別AI -->
         <div class="right-panel">
-            <h2>吹き戻し判別AI</h2>
             <div id="webcam-container"></div>
             <div id="label-container"></div>
         </div>
@@ -232,18 +231,23 @@
 
             // Webカメラのセットアップ
             const flip = true;
-            webcam = new tmImage.Webcam(320, 240, flip); // サイズを調整 (320x240)
+            webcam = new tmImage.Webcam(360, 270, flip); // サイズを調整 (360x270)
             await webcam.setup();
             await webcam.play();
 
             // WebカメラのキャンバスをDOMに追加
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            const webcamCanvas = webcam.canvas;
+            webcamCanvas.style.width = "100%";
+            webcamCanvas.style.height = "auto";
+            document.getElementById("webcam-container").appendChild(webcamCanvas);
 
             // ガイドライン用のCanvasを作成して追加
             const guideCanvas = document.createElement("canvas");
             guideCanvas.id = "guide-canvas";
-            guideCanvas.width = 320;
-            guideCanvas.height = 240;
+            guideCanvas.width = 360;
+            guideCanvas.height = 270;
+            guideCanvas.style.width = "100%";
+            guideCanvas.style.height = "auto";
             document.getElementById("webcam-container").appendChild(guideCanvas);
 
             // 人の形のガイドラインを描画
