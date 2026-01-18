@@ -7,6 +7,9 @@ githubにpush
 
 # バージョン履歴
 
+## v1.0.8 (2025-01-18)
+- デバッグ用アラートをconsole.logに変更（2本指タップ検知時のアラート削除）
+
 ## v1.0.7 (2025-01-18)
 - 2本指タップ機能の修正（iOS対応）
 - CSSによるタッチ干渉の排除（body, #webcam-container, canvasにtouch-action: none等を追加）
