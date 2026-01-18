@@ -443,58 +443,63 @@ class NodoguroGame {
             return;
         }
         
-        const touch = e.touches[0];
-        this.touchStartTime = Date.now();
-        this.touchStartPosition = {
-            x: touch.clientX,
-            y: touch.clientY
-        };
-        
-        // 長押し検出のタイマーを開始
-        this.longPressTimeout = setTimeout(() => {
-            if (!this.isLongPressing) {
-                this.isLongPressing = true;
+        // 2本指タップを検出
+        if (e.touches.length === 2) {
+            // 2本指がタッチされたら、ぶくぶく状態を開始
+            if (!this.isBubbling) {
+                this.isBubbling = true;
                 this.updateBubblingState();
             }
-        }, this.longPressThreshold);
-        
-        // デフォルトの動作を防止（スクロール防止など）
-        e.preventDefault();
+            // デフォルトの動作を防止（ピンチズーム防止など）
+            e.preventDefault();
+        } else if (e.touches.length === 1) {
+            // 1本指の場合は位置を記録（移動検出用）
+            const touch = e.touches[0];
+            this.touchStartPosition = {
+                x: touch.clientX,
+                y: touch.clientY
+            };
+        }
     }
     
     handleTouchMove(e) {
-        if (!this.touchStartPosition) return;
-        
         if (!e.touches || e.touches.length === 0) {
-            this.cancelLongPress();
             return;
         }
         
-        const touch = e.touches[0];
-        const moveDistance = Math.sqrt(
-            Math.pow(touch.clientX - this.touchStartPosition.x, 2) +
-            Math.pow(touch.clientY - this.touchStartPosition.y, 2)
-        );
-        
-        // 指が大きく動いた場合は長押しをキャンセル
-        if (moveDistance > 30) { // 30px以上移動したらキャンセル
-            this.cancelLongPress();
+        // 2本指タップ中はぶくぶく状態を維持
+        if (e.touches.length === 2) {
+            if (!this.isBubbling) {
+                this.isBubbling = true;
+                this.updateBubblingState();
+            }
+            // デフォルトの動作を防止（ピンチズーム防止など）
+            e.preventDefault();
+        } else if (e.touches.length === 1 && this.isBubbling) {
+            // 2本指から1本指になったら、ぶくぶく状態を停止
+            this.isBubbling = false;
+            this.updateBubblingState();
         }
-        
-        e.preventDefault();
     }
     
     handleTouchEnd(e) {
-        // 長押しを停止
-        this.cancelLongPress();
-
+        if (!e.touches || e.touches.length === 0) {
+            // すべての指が離れたら、ぶくぶく状態を停止
+            if (this.isBubbling) {
+                this.isBubbling = false;
+                this.updateBubblingState();
+            }
+        } else if (e.touches.length === 1) {
+            // 2本指から1本指になったら、ぶくぶく状態を停止
+            if (this.isBubbling) {
+                this.isBubbling = false;
+                this.updateBubblingState();
+            }
+        }
+        
         // 状態をリセット
-        this.isLongPressing = false;
         this.touchStartPosition = null;
-
-        // ぶくぶく状態を更新
-        this.updateBubblingState();
-
+        
         e.preventDefault();
     }
     
