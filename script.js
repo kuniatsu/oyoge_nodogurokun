@@ -455,7 +455,7 @@ class NodoguroGame {
         
         // 2本指タップを検出
         if (e.touches.length === 2) {
-            alert("2本指検知！ぶくぶく開始"); // デバッグ用アラート
+            console.log("2本指検知！ぶくぶく開始");
             console.log("2本指タップを検出");
             // 2本指がタッチされたら、ぶくぶく状態を開始
             if (!this.isBubbling) {
