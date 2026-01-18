@@ -7,6 +7,15 @@ githubにpush
 
 # バージョン履歴
 
+## v1.0.6 (2025-01-18)
+- index.htmlの完全書き直し（HTML構造の簡素化）
+- webcam-containerとlabel-containerを確実に配置
+- JavaScriptを</body>の直前に配置（DOM読み込み後に実行）
+- init関数の処理順序を修正（カメラ起動をAIモデル読み込みより先に実行）
+- webcam-containerの存在確認を最初に実行（nullなら即座に停止）
+- エラーハンドリングを統一（alert("Error: " + error.message)）
+- iOS/Androidでの「カメラ要素が見つからない」エラーの根本修正
+
 ## v1.0.5 (2025-01-18)
 - init関数のグローバルスコープ定義（window.init）で確実に参照可能に
 - label-containerの動的作成機能を追加（自己修復ロジック）

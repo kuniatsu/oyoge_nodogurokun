@@ -85,7 +85,7 @@
             padding: 0;
             margin: 0;
             background-color: #f5f5f5;
-            display: none; /* 最初は非表示 */
+            display: none;
             flex-direction: column;
             align-items: center;
             overflow-y: auto;
@@ -93,13 +93,7 @@
         }
 
         .right-panel.show {
-            display: flex; /* 表示時はflex */
-        }
-
-        .right-panel h2 {
-            margin: 15px 0;
-            font-size: 1.3em;
-            flex-shrink: 0;
+            display: flex;
         }
 
         #webcam-container {
@@ -117,6 +111,19 @@
             width: 100% !important;
             height: 100% !important;
             object-fit: cover;
+        }
+
+        #label-container {
+            width: 100%;
+            padding: 8px;
+            margin: 0;
+            flex-shrink: 0;
+            background-color: #f5f5f5;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 150px;
+            font-size: 12px;
+            line-height: 1.4;
         }
 
         .camera-start-button {
@@ -139,58 +146,13 @@
         .camera-start-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
-            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
-        }
-
-        .camera-start-button:active {
-            transform: translateY(0);
         }
 
         .camera-start-button:disabled {
             background: #ccc;
             cursor: not-allowed;
-            transform: none;
         }
 
-        .camera-permission-button {
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-            transition: all 0.3s ease;
-            z-index: 10;
-            margin-top: 10px;
-        }
-
-        .camera-permission-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
-            background: linear-gradient(135deg, #ee5a24 0%, #ff6b6b 100%);
-        }
-
-        .camera-button-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-        }
-
-        .camera-button-container.hidden {
-            display: none;
-        }
-
-        /* 画面中央のスタートボタン用コンテナ */
         .start-button-overlay {
             position: fixed;
             top: 0;
@@ -208,41 +170,10 @@
             display: none;
         }
 
-        #guide-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            pointer-events: none;
-        }
-
-        #label-container {
-            width: 100%;
-            padding: 8px;
-            margin: 0;
-            flex-shrink: 0;
-            background-color: #f5f5f5;
-            overflow-y: auto;
-            overflow-x: hidden;
-            max-height: 150px;
-            font-size: 12px;
-            line-height: 1.4;
-        }
-
-        #label-container div {
-            margin: 5px 0;
-            font-size: 0.9em;
-        }
-
         .unified-progress-container {
             width: 100%;
             margin: 0;
             padding: 0;
-        }
-
-        .progress-labels {
-            display: none; /* ラベルを非表示 */
         }
 
         .progress-bar {
@@ -263,7 +194,6 @@
             top: 0;
         }
 
-        /* 画面向きロック用オーバーレイ */
         #orientation-lock-overlay {
             position: fixed;
             top: 0;
@@ -300,18 +230,11 @@
         }
 
         @keyframes rotate-phone {
-            0%, 100% {
-                transform: rotate(0deg);
-            }
-            25% {
-                transform: rotate(-15deg);
-            }
-            75% {
-                transform: rotate(15deg);
-            }
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
         }
 
-        /* バージョン表示 */
         #version-display {
             position: fixed;
             top: 8px;
@@ -325,25 +248,19 @@
             pointer-events: none;
             font-family: monospace;
         }
-
     </style>
 </head>
 <body>
-    <!-- バージョン表示 -->
-    <div id="version-display">v1.0.5</div>
+    <div id="version-display">v1.0.6</div>
 
-    <!-- 画面向きロックオーバーレイ -->
     <div id="orientation-lock-overlay">
         <div class="orientation-lock-content">
             <div class="orientation-icon">📱↻</div>
-            <div class="orientation-message">
-                スマホの向きを横向きにして下さい
-            </div>
+            <div class="orientation-message">スマホの向きを横向きにして下さい</div>
         </div>
     </div>
 
     <div class="container">
-        <!-- 左側: のどぐろ君のゲーム画面 -->
         <div class="left-panel">
             <div class="game-container">
                 <div class="aquarium">
@@ -359,188 +276,91 @@
                     <div class="suffering-message" id="suffering-message">
                         <p>のどぐろ君を助けて！</p>
                     </div>
-
-                    <!-- カメラ映像表示エリア（水槽内右上） -->
-                    <div class="camera-section">
-                        <div class="camera-container">
-                            <video id="camera-video" autoplay muted playsinline></video>
-                            <div class="camera-overlay">
-                                <p>カメラを開始</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
-
-            <!-- 音声ファイル -->
             <audio id="bubbling-sound" preload="auto" loop>
                 <source src="oyogenodogurokun.mp3" type="audio/mpeg">
-                お使いのブラウザは音声再生をサポートしていません。
             </audio>
         </div>
 
-        <!-- 画面中央のスタートボタン -->
         <div id="start-button-overlay" class="start-button-overlay">
-            <button id="start-camera-btn" class="camera-start-button">
-                リハビリを始める
-            </button>
+            <button id="start-camera-btn" class="camera-start-button">リハビリを始める</button>
         </div>
 
-        <!-- 右側: 吹き戻し判別AI -->
         <div class="right-panel" id="right-panel">
-            <div id="webcam-container">
-                <div id="camera-button-container" class="camera-button-container">
-                    <button id="request-permission-btn" class="camera-permission-button" style="display: none;">
-                        カメラ権限を許可する
-                    </button>
-                </div>
-            </div>
+            <div id="webcam-container"></div>
             <div id="label-container"></div>
         </div>
     </div>
 
-    <!-- LIFF SDK -->
+    <!-- すべてのJavaScriptは</body>の直前に配置 -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <script src="script.js"></script>
     <script src="camera.js"></script>
 
-    <script type="text/javascript">
-        // 🚨 ローカルモデルファイルを使用
+    <script>
+        // モデルパス
         const MODEL_PATH = "./model/";
-
         let model, webcam, labelContainer, maxPredictions;
-        let isInitialized = false;
 
-        // LINEのWebViewかどうかを検出
-        function isLineWebView() {
-            const ua = navigator.userAgent || navigator.vendor || window.opera;
-            return /Line/i.test(ua) || /LINE/i.test(ua);
+        // 画面向きチェック
+        function checkOrientation() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const orientationOverlay = document.getElementById('orientation-lock-overlay');
+            const mainContainer = document.querySelector('.container');
+            
+            if (height > width) {
+                orientationOverlay.classList.add('show');
+                if (mainContainer) mainContainer.style.pointerEvents = 'none';
+            } else {
+                orientationOverlay.classList.remove('show');
+                if (mainContainer) mainContainer.style.pointerEvents = 'auto';
+            }
         }
+        checkOrientation();
+        window.addEventListener('resize', checkOrientation);
+        window.addEventListener('orientationchange', checkOrientation);
 
-        // カメラAPIが利用可能かチェック
-        function isCameraAvailable() {
-            return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-        }
-
-        // モデルのロードとWebカメラのセットアップ
-        // グローバルスコープで定義（確実に参照できるように）
-        window.init = async function init() {
+        // LIFF初期化
+        async function initializeLiff() {
             try {
-                // カメラ起動プロセス開始のアラート（本番でも表示）
-                alert("カメラ起動プロセス開始");
-                
-                console.log("init()関数が呼び出されました");
-                // デバッグモードでのみ詳細ログを表示
-                if (vConsole && typeof vConsole.log === 'function') {
-                    vConsole.log("init()関数が呼び出されました");
+                await liff.init({ liffId: '2008915520-PNmQi9GW' });
+            } catch (error) {
+                console.error('LIFF初期化エラー:', error);
+            }
+        }
+
+        // init関数をグローバルスコープで定義（iOS対応版）
+        window.init = async function() {
+            try {
+                // 1. webcam-containerの存在確認（最重要）
+                const webcamContainer = document.getElementById("webcam-container");
+                if (!webcamContainer) {
+                    alert("予期せぬエラー: カメラ表示場所がありません");
+                    return;
                 }
-                
-                // label-containerの存在確認と動的作成（自己修復ロジック）
+
+                // label-containerの取得
                 labelContainer = document.getElementById("label-container");
                 if (!labelContainer) {
-                    console.warn("label-containerが見つかりません。動的に作成します。");
-                    if (vConsole && typeof vConsole.warn === 'function') {
-                        vConsole.warn("label-containerが見つかりません。動的に作成します。");
-                    }
-                    labelContainer = document.createElement("div");
-                    labelContainer.id = "label-container";
-                    labelContainer.style.cssText = "max-height: 150px; overflow-y: auto; font-size: 12px; padding: 8px;";
-                    const rightPanel = document.getElementById("right-panel");
-                    if (rightPanel) {
-                        rightPanel.appendChild(labelContainer);
-                    } else {
-                        document.body.appendChild(labelContainer);
-                    }
+                    console.warn("label-containerが見つかりません");
                 }
-                
-                // その他の要素の取得（存在しない場合はnullを返すが、処理は継続）
-                const startBtn = document.getElementById("start-camera-btn");
-                const permissionBtn = document.getElementById("request-permission-btn");
-                const buttonContainer = document.getElementById("camera-button-container");
-                
+
                 // ボタンを無効化
+                const startBtn = document.getElementById("start-camera-btn");
                 if (startBtn) {
                     startBtn.disabled = true;
                     startBtn.textContent = "読み込み中...";
                 }
-                
-                // LINEのWebViewかどうかをチェック
-                if (isLineWebView()) {
-                    const warningDiv = document.createElement("div");
-                    warningDiv.style.cssText = "color: #ff6600; padding: 10px; margin: 5px 0; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px; font-size: 11px;";
-                    warningDiv.innerHTML = `
-                        <strong>⚠️ カメラの権限を設定</strong><br>
-                        設定 → LINE → 権限 → カメラを許可<br>
-                        または「...」→「ブラウザで開く」
-                    `;
-                    labelContainer.appendChild(warningDiv);
-                }
 
-                // カメラAPIが利用可能かチェック
-                if (!isCameraAvailable()) {
-                    const errorDiv = document.createElement("div");
-                    errorDiv.style.cssText = "color: #ff0000; padding: 10px; margin: 5px 0; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px; font-size: 11px;";
-                    errorDiv.innerHTML = `
-                        <strong>❌ カメラAPIが利用できません</strong><br>
-                        HTTPSでアクセスしてください
-                    `;
-                    if (labelContainer) {
-                        labelContainer.appendChild(errorDiv);
-                    }
-                    if (startBtn) {
-                        startBtn.disabled = false;
-                        startBtn.textContent = "リハビリを始める";
-                    }
-                    // 早期リターンは削除せず、エラーを表示して処理を継続
-                    // ただし、カメラAPIが利用できない場合は処理を中断する必要があるため、returnを維持
-                    return;
-                }
-                
-                // ============================================
-                // iOS/LIFF対策: カメラ起動を最優先（User Gestureの有効期限内に実行）
-                // ============================================
-                console.log("カメラ権限をリクエスト中...（最優先）");
-                // デバッグモードでのみ詳細ログを表示
-                if (vConsole && typeof vConsole.log === 'function') {
-                    vConsole.log("カメラ権限をリクエスト中...（最優先）");
-                }
-                
-                // 1. まず明示的にgetUserMedia()を呼び出して権限を取得（ユーザー操作の権限が有効なうちに）
-                let cameraStream = null;
-                try {
-                    cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { 
-                            facingMode: 'user',
-                            width: { ideal: 360 },
-                            height: { ideal: 270 }
-                        }, 
-                        audio: false 
-                    });
-                    console.log("カメラ権限が許可されました");
-                } catch (permError) {
-                    console.error("カメラ権限エラー:", permError);
-                    throw permError; // エラーを再スローしてcatchブロックで処理
-                }
-                
-                // 2. Webカメラのセットアップ（権限取得直後に実行）
-            const flip = true;
+                // 2. AIモデル読み込みより先に、webcam.setup()を実行（iOSのUser Gesture対策）
+                const flip = true;
                 webcam = new tmImage.Webcam(360, 270, flip);
-                console.log("カメラをセットアップ中...");
-                
-                // LINEのWebViewの場合はカメラセットアップをスキップ
-                if (isLineWebView()) {
-                    if (cameraStream) {
-                        cameraStream.getTracks().forEach(track => track.stop());
-                    }
-                    throw new Error("端末の設定でカメラの権限を許可してください");
-                }
-                
-                // 3. カメラを起動（既に取得したストリームを使用）
-            await webcam.setup();
-                
+                await webcam.setup();
+
                 // iOS対策: video要素にplaysinline, muted, autoplay属性を確実に付与
                 if (webcam.video) {
                     webcam.video.setAttribute('playsinline', '');
@@ -549,162 +369,61 @@
                     webcam.video.playsInline = true;
                     webcam.video.muted = true;
                     webcam.video.autoplay = true;
-                } else {
-                    // video要素が直接アクセスできない場合、DOMから取得を試みる
-                    const videoElements = document.querySelectorAll('video');
-                    videoElements.forEach(video => {
-                        video.setAttribute('playsinline', '');
-                        video.setAttribute('muted', '');
-                        video.setAttribute('autoplay', '');
-                        video.playsInline = true;
-                        video.muted = true;
-                        video.autoplay = true;
-                    });
                 }
-                
-            await webcam.play();
+
+                // 3. webcam.play()を実行
+                await webcam.play();
                 console.log("カメラ起動成功");
 
-                // 4. 取得したストリームを停止（webcamが独自にストリームを管理するため）
-                if (cameraStream) {
-                    cameraStream.getTracks().forEach(track => track.stop());
-                }
+                // 4. webcam-containerにwebcam.canvasをappendChild
+                webcamContainer.appendChild(webcam.canvas);
 
-                // 5. ボタンコンテナを非表示にする
-                if (buttonContainer) {
-                    buttonContainer.classList.add("hidden");
-                }
-
-                // 6. WebカメラのキャンバスをDOMに追加
-                // webcam-containerの存在確認と動的作成（堅牢な実装）
-                let container = document.getElementById("webcam-container");
-                if (!container) {
-                    console.warn("webcam-containerが見つかりません。動的に作成します。");
-                    // デバッグモードでのみ詳細ログを表示
-                    if (vConsole && typeof vConsole.warn === 'function') {
-                        vConsole.warn("webcam-containerが見つかりません。動的に作成します。");
-                    }
-                    // 動的にwebcam-containerを作成
-                    container = document.createElement("div");
-                    container.id = "webcam-container";
-                    container.style.cssText = "position: relative; width: 100%; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background-color: #000;";
-                    
-                    // right-panelに追加（存在する場合）
-                    const rightPanel = document.getElementById("right-panel");
-                    if (rightPanel) {
-                        rightPanel.insertBefore(container, rightPanel.firstChild);
-                    } else {
-                        // right-panelも存在しない場合は作成
-                        const newRightPanel = document.createElement("div");
-                        newRightPanel.id = "right-panel";
-                        newRightPanel.className = "right-panel show";
-                        newRightPanel.style.cssText = "width: 400px; padding: 0; margin: 0; background-color: #f5f5f5; display: flex; flex-direction: column; align-items: center; overflow-y: auto; overflow-x: hidden;";
-                        newRightPanel.appendChild(container);
-                        document.body.appendChild(newRightPanel);
-                    }
-                    console.log("webcam-containerを動的に作成しました");
-                    // デバッグモードでのみ詳細ログを表示
-                    if (vConsole && typeof vConsole.log === 'function') {
-                        vConsole.log("webcam-containerを動的に作成しました");
-                    }
-                }
-                
-                // キャンバスを追加（既に存在する場合は削除してから追加）
-                const existingCanvas = container.querySelector('canvas');
-                if (existingCanvas && existingCanvas !== webcam.canvas) {
-                    existingCanvas.remove();
-                }
-            container.appendChild(webcam.canvas);
-
-                // 7. ガイドライン用のCanvasを作成して追加
-            const guideCanvas = document.createElement("canvas");
-            guideCanvas.id = "guide-canvas";
-            container.appendChild(guideCanvas);
-
-            // コンテナのサイズに合わせてキャンバスを調整
-            function resizeCanvas() {
-                const containerRect = container.getBoundingClientRect();
-                guideCanvas.width = containerRect.width;
-                guideCanvas.height = containerRect.height;
-                drawGuide(guideCanvas);
-            }
-
-            // 初期サイズ設定とリサイズ時の調整
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-
-                // 8. 統合プログレスバーを作成（1つだけ、ラベルなし）
-                const unifiedContainer = document.createElement("div");
-                unifiedContainer.className = "unified-progress-container";
-
-                // プログレスバー（左から右に緑が伸びる）
-                const progressBarDiv = document.createElement("div");
-                progressBarDiv.className = "progress-bar";
-                const progressFillDiv = document.createElement("div");
-                progressFillDiv.className = "progress-fill";
-                progressFillDiv.id = "unified-progress-fill";
-                progressFillDiv.style.width = "0%";
-                progressBarDiv.appendChild(progressFillDiv);
-                unifiedContainer.appendChild(progressBarDiv);
-                
-                if (labelContainer) {
-                    labelContainer.appendChild(unifiedContainer);
-                }
-
-                // ============================================
-                // 9. カメラ起動後にモデルを読み込む（重い処理は後回し）
-                // ============================================
-                console.log("モデルを読み込み中...（カメラ起動後）");
+                // 5. その後にtmImage.load()を行う
                 const modelURL = MODEL_PATH + "model.json";
                 const metadataURL = MODEL_PATH + "metadata.json";
-                
-                // モデルとメタデータのロード
                 model = await tmImage.load(modelURL, metadataURL);
                 maxPredictions = model.getTotalClasses();
                 console.log("モデル読み込み成功。クラス数:", maxPredictions);
 
-                // 10. モデル読み込み完了後に予測ループを開始
-                window.requestAnimationFrame(loop);
-            } catch (error) {
-                const errorMsg = "エラー発生: " + (error.message || error.name || "不明なエラー");
-                console.error("初期化エラー:", error);
-                // デバッグモードでのみ詳細ログを表示
-                if (vConsole && typeof vConsole.error === 'function') {
-                    vConsole.error("初期化エラー:", error);
-                }
-                alert(errorMsg);
-                
-                // エラーの種類に応じたメッセージを表示
-                let errorMessage = "";
-                let showPermissionButton = false;
-                
-                if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
-                    errorMessage = "カメラへのアクセスが拒否されました。下のボタンからカメラ権限を許可してください。";
-                    showPermissionButton = true;
-                } else if (error.name === "NotFoundError" || error.name === "DevicesNotFoundError") {
-                    errorMessage = "カメラが見つかりません。デバイスにカメラが接続されているか確認してください。";
-                } else if (error.message && error.message.includes("権限")) {
-                    errorMessage = "端末の設定でカメラの権限を許可してください。下のボタンからカメラ権限を許可してください。";
-                    showPermissionButton = true;
-                } else if (error.message && error.message.includes("file://")) {
-                    errorMessage = "端末の設定でカメラの権限を許可してください。";
-                } else {
-                    errorMessage = `エラー: ${error.message || error.name || "不明なエラー"}`;
-                }
-                
-                // エラー時でもlabel-containerに要素を表示（デモ用）
-                const errorDiv = document.createElement("div");
-                errorDiv.style.cssText = "color: #ff0000; padding: 10px; margin: 5px 0; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px; font-size: 11px; word-wrap: break-word;";
-                errorDiv.innerHTML = `<strong>❌ エラー</strong><br>${errorMessage}`;
+                // プログレスバーを作成
                 if (labelContainer) {
-                    labelContainer.appendChild(errorDiv);
+                    const unifiedContainer = document.createElement("div");
+                    unifiedContainer.className = "unified-progress-container";
+                    const progressBarDiv = document.createElement("div");
+                    progressBarDiv.className = "progress-bar";
+                    const progressFillDiv = document.createElement("div");
+                    progressFillDiv.className = "progress-fill";
+                    progressFillDiv.id = "unified-progress-fill";
+                    progressFillDiv.style.width = "0%";
+                    progressBarDiv.appendChild(progressFillDiv);
+                    unifiedContainer.appendChild(progressBarDiv);
+                    labelContainer.appendChild(unifiedContainer);
                 }
-                
-                // カメラ権限が拒否された場合は再試行ボタンを表示
-                const permissionBtn = document.getElementById("request-permission-btn");
-                if (showPermissionButton && permissionBtn) {
-                    permissionBtn.style.display = "block";
+
+                // スタートボタンを非表示
+                const startOverlay = document.getElementById("start-button-overlay");
+                if (startOverlay) {
+                    startOverlay.classList.add("hidden");
                 }
+
+                // 右パネルを表示
+                const rightPanel = document.getElementById("right-panel");
+                if (rightPanel) {
+                    rightPanel.classList.add("show");
+                }
+
+                // 10匹を1匹に減らす
+                if (window.nodoguroGame) {
+                    window.nodoguroGame.reduceToSingleFish();
+                    window.nodoguroGame.startRehabilitation();
+                }
+
+                // 予測ループを開始
+                window.requestAnimationFrame(loop);
+
+            } catch (error) {
+                alert("Error: " + error.message);
+                console.error("初期化エラー:", error);
                 
                 // スタートボタンを再度有効化
                 const startBtn = document.getElementById("start-camera-btn");
@@ -712,28 +431,14 @@
                     startBtn.disabled = false;
                     startBtn.textContent = "リハビリを始める";
                 }
-                
-                // デモ用の統合プログレスバーを表示（モデルが読み込めない場合でも、ラベルなし）
-                const unifiedContainer = document.createElement("div");
-                unifiedContainer.className = "unified-progress-container";
-                
-                const progressBarDiv = document.createElement("div");
-                progressBarDiv.className = "progress-bar";
-                const progressFillDiv = document.createElement("div");
-                progressFillDiv.className = "progress-fill";
-                progressFillDiv.id = "unified-progress-fill";
-                progressFillDiv.style.width = "5%"; // デモ用：5%が「伸びてる」
-                progressBarDiv.appendChild(progressFillDiv);
-                unifiedContainer.appendChild(progressBarDiv);
-
-                if (labelContainer) {
-                    labelContainer.appendChild(unifiedContainer);
-                }
             }
         };
 
+        // 予測ループ
         async function loop() {
-            webcam.update();
+            if (webcam) {
+                webcam.update();
+            }
             await predict();
             window.requestAnimationFrame(loop);
         }
@@ -745,267 +450,70 @@
             }
 
             try {
-            const prediction = await model.predict(webcam.canvas);
-
-            let isBlowingDetected = false;
+                const prediction = await model.predict(webcam.canvas);
+                let isBlowingDetected = false;
                 let stretchingPercent = 0;
-                let notStretchingPercent = 0;
 
-                // 予測結果から「伸びてる」と「伸びてない」の確率を取得
-            for (let i = 0; i < maxPredictions; i++) {
+                for (let i = 0; i < maxPredictions; i++) {
                     if (i >= prediction.length) break;
                     
-                const className = prediction[i].className;
-                const probability = prediction[i].probability.toFixed(2); // 0.00 to 1.00
-                const percent = Math.round(probability * 100);
+                    const className = prediction[i].className;
+                    const probability = prediction[i].probability.toFixed(2);
+                    const percent = Math.round(probability * 100);
 
-                // デバッグ用ログ
-                console.log(`クラス名: "${className}", 確率: ${percent}%`);
-
-                    // 「伸びてる」または「伸ばしてる」の確率を取得
                     if (className.includes("伸びてる") || className.includes("伸ばしてる")) {
                         stretchingPercent = percent;
                         if (percent >= 80) {
-                    console.log("吹き戻しを検出！", className, percent);
-                    isBlowingDetected = true;
+                            isBlowingDetected = true;
                         }
-                    } else if (className.includes("伸びてない") || className.includes("伸ばしてない")) {
-                        notStretchingPercent = percent;
                     }
                 }
 
-                // 統合プログレスバーの更新（右側から「伸びてる」の確率分を塗りつぶす）
+                // プログレスバーの更新
                 const fillElement = document.getElementById("unified-progress-fill");
                 if (fillElement) {
                     fillElement.style.width = `${stretchingPercent}%`;
-            }
+                }
 
-            // ゲームにAI判定結果を通知
-            console.log("nodoguroGame:", nodoguroGame, "isBlowingDetected:", isBlowingDetected);
-            if (nodoguroGame) {
-                nodoguroGame.setAIBlowing(isBlowingDetected);
+                // ゲームにAI判定結果を通知
+                if (window.nodoguroGame) {
+                    window.nodoguroGame.setAIBlowing(isBlowingDetected);
                 }
             } catch (error) {
                 console.error("予測エラー:", error);
             }
         }
 
-        // バストアップのガイドラインを描画する関数
-        function drawGuide(canvas) {
-            const ctx = canvas.getContext("2d");
-            const width = canvas.width;
-            const height = canvas.height;
-
-            // 中心位置（右に寄せる）
-            const centerX = width * 0.65;
-            const centerY = height * 0.45;
-
-            // ガイドラインのスタイル設定
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-            ctx.lineWidth = 2;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-
-            // 横顔（左向き）のシルエットを2つの楕円で描画
-            const radiusX_upper = width * 0.28;  // 上の楕円の横幅（鼻が突き出る）
-            const radiusY = width * 0.30;  // 楕円の縦幅
-            const radiusX_lower = width * 0.24;  // 下の楕円の横幅
-
-            // 下の楕円の中心位置（右端を上の楕円と揃えるため右にずらす）
-            const centerX_lower = centerX + (radiusX_upper - radiusX_lower);
-
-            // 上半分の楕円（額から鼻）
-            ctx.beginPath();
-            ctx.ellipse(centerX, centerY, radiusX_upper, radiusY, 0, Math.PI, 0, false);
-            ctx.stroke();
-
-            // 下半分の楕円（鼻から顎）
-            ctx.beginPath();
-            ctx.ellipse(centerX_lower, centerY, radiusX_lower, radiusY, 0, 0, Math.PI, false);
-            ctx.stroke();
-
-            // 上の楕円の左端
-            const upperLeftX = centerX - radiusX_upper;
-            const upperLeftY = centerY;
-
-            // 下の楕円の左端
-            const lowerLeftX = centerX_lower - radiusX_lower;
-            const lowerLeftY = centerY;
-
-            // 鼻のライン（上の楕円の左端から下の楕円の左端へ）
-            ctx.beginPath();
-            ctx.moveTo(upperLeftX, upperLeftY);
-            ctx.lineTo(lowerLeftX, lowerLeftY);
-            ctx.stroke();
-
-            // 吹き戻しのライン（口の位置から左に長く伸びる）
-            const mouthY = centerY + radiusY * 0.4;  // 鼻のラインより下（口の位置）
-            const mouthStartX = centerX_lower - radiusX_lower * 0.7;  // 顔の輪郭より少し内側
-            const blowoutLength = width * 0.5;  // 吹き戻しの長さ
-
-            ctx.beginPath();
-            ctx.moveTo(mouthStartX, mouthY);
-            ctx.lineTo(mouthStartX - blowoutLength, mouthY);
-            ctx.stroke();
-
-            // ガイドテキストを追加
-            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-            ctx.font = "14px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("この枠内に横顔が", centerX, height - 25);
-            ctx.fillText("収まるように調整してください", centerX, height - 10);
-        }
-    </script>
-
-    <script>
-        // 画面向きチェック機能
-        const orientationOverlay = document.getElementById('orientation-lock-overlay');
-        const mainContainer = document.querySelector('.container');
-
-        function checkOrientation() {
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-
-            // 縦向き（縦幅 > 横幅）の場合
-            if (height > width) {
-                orientationOverlay.classList.add('show');
-                // メインコンテナの操作を無効化
-                if (mainContainer) {
-                    mainContainer.style.pointerEvents = 'none';
-                }
-            } else {
-                // 横向きの場合
-                orientationOverlay.classList.remove('show');
-                // メインコンテナの操作を有効化
-                if (mainContainer) {
-                    mainContainer.style.pointerEvents = 'auto';
-                }
-            }
-        }
-
-        // 初期チェック
-        checkOrientation();
-
-        // 画面サイズ変更時とデバイス向き変更時にチェック
-        window.addEventListener('resize', checkOrientation);
-        window.addEventListener('orientationchange', checkOrientation);
-    </script>
-
-    <script>
-        // LIFF初期化とアプリ起動
-        let liffId = '2008915520-PNmQi9GW';
-        
-        // LIFF初期化関数
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: liffId });
-            } catch (error) {
-                console.error('LIFF初期化エラー:', error);
-                // LIFF初期化に失敗してもアプリは動作するようにする
-            }
-        }
-        
         // ページ読み込み時にLIFF初期化とボタンのイベントハンドラを設定
         window.addEventListener('DOMContentLoaded', async function() {
-            // LIFF初期化
             await initializeLiff();
             
             const startBtn = document.getElementById("start-camera-btn");
-            const permissionBtn = document.getElementById("request-permission-btn");
-            const startOverlay = document.getElementById("start-button-overlay");
-            const rightPanel = document.getElementById("right-panel");
-            
-            // スタートボタンのイベントハンドラ（clickとtouchstartの両方に対応）
             if (startBtn) {
                 const handleStart = function(e) {
                     try {
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        console.log("リハビリ開始ボタンが押されました");
-                        // デバッグモードでのみ詳細ログを表示
-                        if (vConsole && typeof vConsole.log === 'function') {
-                            vConsole.log("リハビリ開始ボタンが押されました");
-                        }
-                        
-                        // ライブラリ読み込み待機チェック
                         if (typeof tmImage === 'undefined') {
-                            const errorMsg = "AIの準備中です。少々お待ちください。";
-                            console.error(errorMsg);
-                            // デバッグモードでのみ詳細ログを表示
-                            if (vConsole && typeof vConsole.error === 'function') {
-                                vConsole.error(errorMsg);
-                            }
-                            alert(errorMsg);
+                            alert("AIの準備中です。少々お待ちください。");
                             return;
                         }
                         
-                        // スタートボタンを非表示
-                        if (startOverlay) {
-                            startOverlay.classList.add("hidden");
-                        }
-                        
-                        // 右パネルを表示
-                        if (rightPanel) {
-                            rightPanel.classList.add("show");
-                        }
-                        
-                        // 10匹を1匹に減らす
-                        if (window.nodoguroGame) {
-                            window.nodoguroGame.reduceToSingleFish();
-                            // リハビリ開始を通知
-                            window.nodoguroGame.startRehabilitation();
-                        }
-                        
-                        // ユーザーアクション内でinit()を呼び出す（LINE内ブラウザ対応）
-                        // これによりAndroid版LINEブラウザのAutoplay Policyを回避
                         init();
                     } catch (error) {
-                        const errorMsg = "エラー発生: " + error.message;
-                        console.error(errorMsg, error);
-                        // デバッグモードでのみ詳細ログを表示
-                        if (vConsole && typeof vConsole.error === 'function') {
-                            vConsole.error(errorMsg, error);
-                        }
-                        alert(errorMsg);
+                        alert("Error: " + error.message);
+                        console.error("エラー:", error);
                     }
                 };
                 
-                // clickイベントとtouchstartイベントの両方に対応（iPhone/Safari対策）
-                // 確実に動作するように複数のイベントタイプでリスナーを設定
                 startBtn.addEventListener('click', handleStart, { passive: false });
                 startBtn.addEventListener('touchend', handleStart, { passive: false });
                 startBtn.addEventListener('touchstart', function(e) {
-                    // touchstartでも処理を開始（iOS対策）
                     e.preventDefault();
                     handleStart(e);
                 }, { passive: false });
-                
-                // 念のため、onclick属性も設定（フォールバック）
                 startBtn.onclick = handleStart;
-            } else {
-                console.error("スタートボタンが見つかりません");
-                // デバッグモードでのみ詳細ログを表示
-                if (vConsole && typeof vConsole.error === 'function') {
-                    vConsole.error("スタートボタンが見つかりません");
-                }
-            }
-            
-            // カメラ権限再試行ボタンのイベントハンドラ
-            if (permissionBtn) {
-                permissionBtn.addEventListener('click', function() {
-                    // カメラ権限を再リクエスト
-                    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-                        .then(function(stream) {
-                            // 権限が許可されたら、ストリームを停止してinit()を再実行
-                            stream.getTracks().forEach(track => track.stop());
-                            init();
-                        })
-                        .catch(function(error) {
-                            console.error("カメラ権限の取得に失敗しました:", error);
-                            alert("カメラ権限が許可されませんでした。ブラウザの設定でカメラの許可を確認してください。");
-                        });
-                });
             }
         });
     </script>
