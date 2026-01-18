@@ -43,6 +43,11 @@
 
         body {
             font-family: sans-serif;
+            /* iOS必須: タッチ干渉の排除 */
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .container {
@@ -105,12 +110,30 @@
             align-items: center;
             justify-content: center;
             background-color: #000;
+            /* iOS必須: タッチ干渉の排除 */
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         #webcam-container canvas {
             width: 100% !important;
             height: 100% !important;
             object-fit: cover;
+            /* iOS必須: タッチ干渉の排除 */
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        /* canvas要素全般にも適用 */
+        canvas {
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         #label-container {
@@ -251,7 +274,7 @@
     </style>
 </head>
 <body>
-    <div id="version-display">v1.0.6</div>
+    <div id="version-display">v1.0.7</div>
 
     <div id="orientation-lock-overlay">
         <div class="orientation-lock-content">
@@ -416,6 +439,13 @@
                 if (window.nodoguroGame) {
                     window.nodoguroGame.reduceToSingleFish();
                     window.nodoguroGame.startRehabilitation();
+                } else {
+                    // NodoguroGameが初期化されていない場合は初期化
+                    console.warn("NodoguroGameが初期化されていません。初期化を試みます。");
+                    if (typeof NodoguroGame !== 'undefined') {
+                        window.nodoguroGame = new NodoguroGame();
+                        console.log("NodoguroGameを初期化しました");
+                    }
                 }
 
                 // 予測ループを開始

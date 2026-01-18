@@ -7,6 +7,12 @@ githubにpush
 
 # バージョン履歴
 
+## v1.0.7 (2025-01-18)
+- 2本指タップ機能の修正（iOS対応）
+- CSSによるタッチ干渉の排除（body, #webcam-container, canvasにtouch-action: none等を追加）
+- NodoguroGameクラスの初期化確認処理を追加（init()関数内）
+- デバッグ用アラートを追加（2本指タップ検知時に表示）
+
 ## v1.0.6 (2025-01-18)
 - index.htmlの完全書き直し（HTML構造の簡素化）
 - webcam-containerとlabel-containerを確実に配置
