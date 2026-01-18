@@ -13,21 +13,33 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: sans-serif;
-            overflow: hidden;
         }
 
         .container {
             display: flex;
             height: 100vh;
             width: 100vw;
+            gap: 0;
+            margin: 0;
+            padding: 0;
         }
 
         .left-panel {
             flex: 1;
             overflow: hidden;
             position: relative;
+            margin: 0;
+            padding: 0;
         }
 
         .left-panel audio {
@@ -51,11 +63,13 @@
         .right-panel {
             width: 400px;
             padding: 0;
+            margin: 0;
             background-color: #f5f5f5;
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .right-panel h2 {
@@ -68,6 +82,7 @@
             position: relative;
             width: 100%;
             flex: 1;
+            min-height: 0;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -94,6 +109,7 @@
             padding: 10px 20px;
             flex-shrink: 0;
             background-color: #f5f5f5;
+            overflow: visible;
         }
 
         #label-container div {
@@ -256,61 +272,98 @@
 
         // モデルのロードとWebカメラのセットアップ
         async function init() {
-            const modelURL = MODEL_PATH + "model.json";
-            const metadataURL = MODEL_PATH + "metadata.json";
-
-            // モデルとメタデータのロード
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-
-            // Webカメラのセットアップ
-            const flip = true;
-            webcam = new tmImage.Webcam(360, 270, flip); // サイズを調整 (360x270)
-            await webcam.setup();
-            await webcam.play();
-
-            // WebカメラのキャンバスをDOMに追加
-            const container = document.getElementById("webcam-container");
-            container.appendChild(webcam.canvas);
-
-            // ガイドライン用のCanvasを作成して追加
-            const guideCanvas = document.createElement("canvas");
-            guideCanvas.id = "guide-canvas";
-            container.appendChild(guideCanvas);
-
-            // コンテナのサイズに合わせてキャンバスを調整
-            function resizeCanvas() {
-                const containerRect = container.getBoundingClientRect();
-                guideCanvas.width = containerRect.width;
-                guideCanvas.height = containerRect.height;
-                drawGuide(guideCanvas);
-            }
-
-            // 初期サイズ設定とリサイズ時の調整
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-
             labelContainer = document.getElementById("label-container");
+            
+            try {
+                const modelURL = MODEL_PATH + "model.json";
+                const metadataURL = MODEL_PATH + "metadata.json";
 
-            // 予測結果表示用の要素（クラス名とプログレスバー）を作成
-            for (let i = 0; i < maxPredictions; i++) {
-                const classDiv = document.createElement("div");
-                const progressBarDiv = document.createElement("div");
-                progressBarDiv.className = "progress-bar";
-                const progressFillDiv = document.createElement("div");
-                progressFillDiv.className = "progress-fill";
-                progressFillDiv.id = `progress-fill-${i}`; // IDを設定
+                console.log("モデルを読み込み中...", modelURL);
+                
+                // モデルとメタデータのロード
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+                console.log("モデル読み込み成功。クラス数:", maxPredictions);
 
-                progressBarDiv.appendChild(progressFillDiv);
+                // Webカメラのセットアップ
+                const flip = true;
+                webcam = new tmImage.Webcam(360, 270, flip); // サイズを調整 (360x270)
+                console.log("カメラをセットアップ中...");
+                await webcam.setup();
+                await webcam.play();
+                console.log("カメラ起動成功");
 
-                classDiv.appendChild(document.createElement("span")); // クラス名用
-                classDiv.appendChild(progressBarDiv);
+                // WebカメラのキャンバスをDOMに追加
+                const container = document.getElementById("webcam-container");
+                container.appendChild(webcam.canvas);
 
-                labelContainer.appendChild(classDiv);
+                // ガイドライン用のCanvasを作成して追加
+                const guideCanvas = document.createElement("canvas");
+                guideCanvas.id = "guide-canvas";
+                container.appendChild(guideCanvas);
+
+                // コンテナのサイズに合わせてキャンバスを調整
+                function resizeCanvas() {
+                    const containerRect = container.getBoundingClientRect();
+                    guideCanvas.width = containerRect.width;
+                    guideCanvas.height = containerRect.height;
+                    drawGuide(guideCanvas);
+                }
+
+                // 初期サイズ設定とリサイズ時の調整
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+
+                // 予測結果表示用の要素（クラス名とプログレスバー）を作成
+                for (let i = 0; i < maxPredictions; i++) {
+                    const classDiv = document.createElement("div");
+                    const progressBarDiv = document.createElement("div");
+                    progressBarDiv.className = "progress-bar";
+                    const progressFillDiv = document.createElement("div");
+                    progressFillDiv.className = "progress-fill";
+                    progressFillDiv.id = `progress-fill-${i}`; // IDを設定
+
+                    progressBarDiv.appendChild(progressFillDiv);
+
+                    classDiv.appendChild(document.createElement("span")); // クラス名用
+                    classDiv.appendChild(progressBarDiv);
+
+                    labelContainer.appendChild(classDiv);
+                }
+
+                // 予測ループの開始
+                window.requestAnimationFrame(loop);
+            } catch (error) {
+                console.error("初期化エラー:", error);
+                
+                // エラー時でもlabel-containerに要素を表示（デモ用）
+                const errorDiv = document.createElement("div");
+                errorDiv.style.color = "#ff0000";
+                errorDiv.style.padding = "10px";
+                errorDiv.innerHTML = `<strong>エラー:</strong> ${error.message}<br>ローカルファイル（file://）では動作しません。HTTPサーバー（例: python -m http.server）で実行してください。`;
+                labelContainer.appendChild(errorDiv);
+                
+                // デモ用のプログレスバーを表示（モデルが読み込めない場合でも）
+                const demoLabels = ["伸ばしてる", "伸ばしてない"];
+                for (let i = 0; i < demoLabels.length; i++) {
+                    const classDiv = document.createElement("div");
+                    const progressBarDiv = document.createElement("div");
+                    progressBarDiv.className = "progress-bar";
+                    const progressFillDiv = document.createElement("div");
+                    progressFillDiv.className = "progress-fill";
+                    progressFillDiv.id = `progress-fill-${i}`;
+                    progressFillDiv.style.width = i === 0 ? "5%" : "95%";
+
+                    progressBarDiv.appendChild(progressFillDiv);
+
+                    const span = document.createElement("span");
+                    span.innerHTML = `${demoLabels[i]}: ${i === 0 ? "5%" : "95%"}`;
+                    classDiv.appendChild(span);
+                    classDiv.appendChild(progressBarDiv);
+
+                    labelContainer.appendChild(classDiv);
+                }
             }
-
-            // 予測ループの開始
-            window.requestAnimationFrame(loop);
         }
 
         async function loop() {
@@ -321,37 +374,51 @@
 
         // 予測の実行と結果の表示
         async function predict() {
-            const prediction = await model.predict(webcam.canvas);
-
-            let isBlowingDetected = false;
-
-            for (let i = 0; i < maxPredictions; i++) {
-                const className = prediction[i].className;
-                const probability = prediction[i].probability.toFixed(2); // 0.00 to 1.00
-                const percent = Math.round(probability * 100);
-
-                // クラス名と確率の表示
-                const classElement = labelContainer.childNodes[i].querySelector('span');
-                classElement.innerHTML = `${className}: ${percent}%`;
-
-                // プログレスバーの更新
-                const fillElement = document.getElementById(`progress-fill-${i}`);
-                fillElement.style.width = `${percent}%`;
-
-                // デバッグ用ログ
-                console.log(`クラス名: "${className}", 確率: ${percent}%`);
-
-                // 「吹き戻しが伸びている」が80%以上の場合
-                if (className.includes("伸びている") && percent >= 80) {
-                    console.log("吹き戻しを検出！", className, percent);
-                    isBlowingDetected = true;
-                }
+            if (!model || !webcam || !labelContainer) {
+                return;
             }
 
-            // ゲームにAI判定結果を通知
-            console.log("nodoguroGame:", nodoguroGame, "isBlowingDetected:", isBlowingDetected);
-            if (nodoguroGame) {
-                nodoguroGame.setAIBlowing(isBlowingDetected);
+            try {
+                const prediction = await model.predict(webcam.canvas);
+
+                let isBlowingDetected = false;
+
+                for (let i = 0; i < maxPredictions; i++) {
+                    if (i >= prediction.length) break;
+                    
+                    const className = prediction[i].className;
+                    const probability = prediction[i].probability.toFixed(2); // 0.00 to 1.00
+                    const percent = Math.round(probability * 100);
+
+                    // クラス名と確率の表示
+                    const classElement = labelContainer.childNodes[i]?.querySelector('span');
+                    if (classElement) {
+                        classElement.innerHTML = `${className}: ${percent}%`;
+                    }
+
+                    // プログレスバーの更新
+                    const fillElement = document.getElementById(`progress-fill-${i}`);
+                    if (fillElement) {
+                        fillElement.style.width = `${percent}%`;
+                    }
+
+                    // デバッグ用ログ
+                    console.log(`クラス名: "${className}", 確率: ${percent}%`);
+
+                    // 「吹き戻しが伸びている」が80%以上の場合
+                    if (className.includes("伸びている") && percent >= 80) {
+                        console.log("吹き戻しを検出！", className, percent);
+                        isBlowingDetected = true;
+                    }
+                }
+
+                // ゲームにAI判定結果を通知
+                console.log("nodoguroGame:", nodoguroGame, "isBlowingDetected:", isBlowingDetected);
+                if (nodoguroGame) {
+                    nodoguroGame.setAIBlowing(isBlowingDetected);
+                }
+            } catch (error) {
+                console.error("予測エラー:", error);
             }
         }
 
