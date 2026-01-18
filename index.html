@@ -372,6 +372,9 @@
         </div>
     </div>
 
+    <!-- LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <script src="script.js"></script>
@@ -462,6 +465,29 @@
                 }
                 
                 await webcam.setup();
+                
+                // iOS対策: video要素にplaysinline, muted, autoplay属性を確実に付与
+                // tmImage.Webcamは内部でvideo要素を使用しているため、setup()後にアクセス可能
+                if (webcam.video) {
+                    webcam.video.setAttribute('playsinline', '');
+                    webcam.video.setAttribute('muted', '');
+                    webcam.video.setAttribute('autoplay', '');
+                    webcam.video.playsInline = true;
+                    webcam.video.muted = true;
+                    webcam.video.autoplay = true;
+                } else {
+                    // video要素が直接アクセスできない場合、DOMから取得を試みる
+                    const videoElements = document.querySelectorAll('video');
+                    videoElements.forEach(video => {
+                        video.setAttribute('playsinline', '');
+                        video.setAttribute('muted', '');
+                        video.setAttribute('autoplay', '');
+                        video.playsInline = true;
+                        video.muted = true;
+                        video.autoplay = true;
+                    });
+                }
+                
                 await webcam.play();
                 console.log("カメラ起動成功");
 
@@ -726,8 +752,24 @@
     </script>
 
     <script>
-        // ページ読み込み時にボタンのイベントハンドラを設定
-        window.addEventListener('DOMContentLoaded', function() {
+        // LIFF初期化とアプリ起動
+        let liffId = '2008915520-PNmQi9GW';
+        
+        // LIFF初期化関数
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: liffId });
+            } catch (error) {
+                console.error('LIFF初期化エラー:', error);
+                // LIFF初期化に失敗してもアプリは動作するようにする
+            }
+        }
+        
+        // ページ読み込み時にLIFF初期化とボタンのイベントハンドラを設定
+        window.addEventListener('DOMContentLoaded', async function() {
+            // LIFF初期化
+            await initializeLiff();
+            
             const startBtn = document.getElementById("start-camera-btn");
             const permissionBtn = document.getElementById("request-permission-btn");
             const startOverlay = document.getElementById("start-button-overlay");
@@ -752,6 +794,7 @@
                     }
                     
                     // ユーザーアクション内でinit()を呼び出す（LINE内ブラウザ対応）
+                    // これによりAndroid版LINEブラウザのAutoplay Policyを回避
                     init();
                 });
             }
