@@ -314,7 +314,7 @@
 </head>
 <body>
     <!-- バージョン表示 -->
-    <div id="version-display">v1.0.2</div>
+    <div id="version-display">v1.0.3</div>
 
     <!-- 画面向きロックオーバーレイ -->
     <div id="orientation-lock-overlay">
@@ -457,10 +457,9 @@
                 // ============================================
                 // iOS/LIFF対策: カメラ起動を最優先（User Gestureの有効期限内に実行）
                 // ============================================
-                // ============================================
-                // iOS/LIFF対策: カメラ起動を最優先（User Gestureの有効期限内に実行）
-                // ============================================
                 console.log("カメラ権限をリクエスト中...（最優先）");
+                vConsole.log("カメラ権限をリクエスト中...（最優先）");
+                alert("カメラ起動を開始します");
                 
                 // 1. まず明示的にgetUserMedia()を呼び出して権限を取得（ユーザー操作の権限が有効なうちに）
                 let cameraStream = null;
@@ -530,7 +529,20 @@
                 }
 
                 // 6. WebカメラのキャンバスをDOMに追加
-            const container = document.getElementById("webcam-container");
+                let container = document.getElementById("webcam-container");
+                if (!container) {
+                    console.error("webcam-containerが見つかりません。動的に作成します。");
+                    vConsole.error("webcam-containerが見つかりません。動的に作成します。");
+                    // 動的にwebcam-containerを作成
+                    container = document.createElement("div");
+                    container.id = "webcam-container";
+                    const rightPanel = document.getElementById("right-panel");
+                    if (rightPanel) {
+                        rightPanel.insertBefore(container, rightPanel.firstChild);
+                    } else {
+                        document.body.appendChild(container);
+                    }
+                }
             container.appendChild(webcam.canvas);
 
                 // 7. ガイドライン用のCanvasを作成して追加
