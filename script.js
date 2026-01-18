@@ -39,6 +39,9 @@ class NodoguroGame {
         // AI判定用の変数
         this.isAIBlowing = false; // AIで吹き戻しを検出中か
         
+        // 2本指タップ用の変数
+        this.isTwoFingerTapping = false; // 2本指タップ中か
+        
         // リハビリ開始フラグ
         this.isRehabilitationStarted = false; // リハビリが開始されたか
 
@@ -458,11 +461,8 @@ class NodoguroGame {
             console.log("2本指検知！ぶくぶく開始");
             console.log("2本指タップを検出");
             // 2本指がタッチされたら、ぶくぶく状態を開始
-            if (!this.isBubbling) {
-                console.log("ぶくぶく状態を開始");
-                this.isBubbling = true;
-                this.updateBubblingState();
-            }
+            this.isTwoFingerTapping = true;
+            this.updateBubblingState();
             // デフォルトの動作を防止（ピンチズーム防止など）
             e.preventDefault();
             e.stopPropagation();
@@ -483,18 +483,18 @@ class NodoguroGame {
         
         // 2本指タップ中はぶくぶく状態を維持
         if (e.touches.length === 2) {
-            if (!this.isBubbling) {
+            if (!this.isTwoFingerTapping) {
                 console.log("touchmove - 2本指でぶくぶく状態を開始");
-                this.isBubbling = true;
+                this.isTwoFingerTapping = true;
                 this.updateBubblingState();
             }
             // デフォルトの動作を防止（ピンチズーム防止など）
             e.preventDefault();
             e.stopPropagation();
-        } else if (e.touches.length === 1 && this.isBubbling) {
+        } else if (e.touches.length === 1 && this.isTwoFingerTapping) {
             // 2本指から1本指になったら、ぶくぶく状態を停止
             console.log("2本指から1本指になった - ぶくぶく状態を停止");
-            this.isBubbling = false;
+            this.isTwoFingerTapping = false;
             this.updateBubblingState();
         }
     }
@@ -507,16 +507,16 @@ class NodoguroGame {
         const remainingTouches = e.touches ? e.touches.length : 0;
         
         // 2本指タップ中に1本指が離れた場合
-        if (endedTouches >= 1 && remainingTouches < 2 && this.isBubbling) {
+        if (endedTouches >= 1 && remainingTouches < 2 && this.isTwoFingerTapping) {
             console.log("2本指から1本以下になった - ぶくぶく状態を停止");
-            this.isBubbling = false;
+            this.isTwoFingerTapping = false;
             this.updateBubblingState();
         }
         
         // すべての指が離れた場合
-        if (remainingTouches === 0 && this.isBubbling) {
+        if (remainingTouches === 0 && this.isTwoFingerTapping) {
             console.log("すべての指が離れた - ぶくぶく状態を停止");
-            this.isBubbling = false;
+            this.isTwoFingerTapping = false;
             this.updateBubblingState();
         }
         
@@ -870,9 +870,9 @@ class NodoguroGame {
         this.updateBubblingState();
     }
 
-    // ぶくぶく中の状態を更新（スペース、長押し、AI判定のいずれかがアクティブならぶくぶく中）
+    // ぶくぶく中の状態を更新（スペース、長押し、AI判定、2本指タップのいずれかがアクティブならぶくぶく中）
     updateBubblingState() {
-        const shouldBubble = this.isSpacePressed || this.isLongPressing || this.isAIBlowing;
+        const shouldBubble = this.isSpacePressed || this.isLongPressing || this.isAIBlowing || this.isTwoFingerTapping;
 
         if (shouldBubble && !this.isBubbling) {
             this.startBubbling();
