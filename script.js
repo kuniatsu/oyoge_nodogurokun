@@ -38,6 +38,9 @@ class NodoguroGame {
 
         // AI判定用の変数
         this.isAIBlowing = false; // AIで吹き戻しを検出中か
+        
+        // リハビリ開始フラグ
+        this.isRehabilitationStarted = false; // リハビリが開始されたか
 
         this.init();
     }
@@ -47,9 +50,17 @@ class NodoguroGame {
         this.setupEventListeners();
         this.positionFish();
         this.startSwimming();
-        this.startSufferingCheck();
+        // リハビリ開始前は苦しみチェックを開始しない
+        // this.startSufferingCheck(); // コメントアウト
         this.startAnimation();
         this.initializeFishList();
+    }
+    
+    // リハビリ開始時に呼び出す
+    startRehabilitation() {
+        this.isRehabilitationStarted = true;
+        this.lastBubbleTime = Date.now(); // リハビリ開始時の時刻を記録
+        this.startSufferingCheck(); // リハビリ開始後に苦しみチェックを開始
     }
     
     setupEventListeners() {
@@ -567,7 +578,22 @@ class NodoguroGame {
     }
     
     startSufferingCheck() {
+        // リハビリが開始されていない場合は苦しみチェックをしない
+        if (!this.isRehabilitationStarted) {
+            return;
+        }
+        
+        // 既にチェックが開始されている場合は何もしない
+        if (this.sufferingInterval) {
+            return;
+        }
+        
         this.sufferingInterval = setInterval(() => {
+            // リハビリが開始されていない場合は何もしない
+            if (!this.isRehabilitationStarted) {
+                return;
+            }
+            
             const now = Date.now();
             const timeSinceLastBubble = now - this.lastBubbleTime;
             

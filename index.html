@@ -111,6 +111,9 @@
             box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
             transition: all 0.3s ease;
             z-index: 10;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
         }
 
         .camera-start-button:hover {
@@ -775,9 +778,14 @@
             const startOverlay = document.getElementById("start-button-overlay");
             const rightPanel = document.getElementById("right-panel");
             
-            // スタートボタンのイベントハンドラ
+            // スタートボタンのイベントハンドラ（clickとtouchstartの両方に対応）
             if (startBtn) {
-                startBtn.addEventListener('click', function() {
+                const handleStart = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log("リハビリ開始ボタンが押されました");
+                    
                     // スタートボタンを非表示
                     if (startOverlay) {
                         startOverlay.classList.add("hidden");
@@ -791,12 +799,18 @@
                     // 10匹を1匹に減らす
                     if (window.nodoguroGame) {
                         window.nodoguroGame.reduceToSingleFish();
+                        // リハビリ開始を通知
+                        window.nodoguroGame.startRehabilitation();
                     }
                     
                     // ユーザーアクション内でinit()を呼び出す（LINE内ブラウザ対応）
                     // これによりAndroid版LINEブラウザのAutoplay Policyを回避
                     init();
-                });
+                };
+                
+                // clickイベントとtouchstartイベントの両方に対応（iPhone/Safari対策）
+                startBtn.addEventListener('click', handleStart);
+                startBtn.addEventListener('touchend', handleStart);
             }
             
             // カメラ権限再試行ボタンのイベントハンドラ
