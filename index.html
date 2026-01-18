@@ -6,6 +6,10 @@
     <title>のどぐろ君</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="camera.css">
+    
+    <!-- vConsole（デバッグツール） -->
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>var vConsole = new VConsole();</script>
     <style>
         * {
             margin: 0;
@@ -310,7 +314,7 @@
 </head>
 <body>
     <!-- バージョン表示 -->
-    <div id="version-display">v1.0.1</div>
+    <div id="version-display">v1.0.2</div>
 
     <!-- 画面向きロックオーバーレイ -->
     <div id="orientation-lock-overlay">
@@ -407,46 +411,52 @@
 
         // モデルのロードとWebカメラのセットアップ
         async function init() {
-            labelContainer = document.getElementById("label-container");
-            const startBtn = document.getElementById("start-camera-btn");
-            const permissionBtn = document.getElementById("request-permission-btn");
-            const buttonContainer = document.getElementById("camera-button-container");
-            
-            // ボタンを無効化
-            if (startBtn) {
-                startBtn.disabled = true;
-                startBtn.textContent = "読み込み中...";
-            }
-            
-            // LINEのWebViewかどうかをチェック
-            if (isLineWebView()) {
-                const warningDiv = document.createElement("div");
-                warningDiv.style.cssText = "color: #ff6600; padding: 10px; margin: 5px 0; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px; font-size: 11px;";
-                warningDiv.innerHTML = `
-                    <strong>⚠️ カメラの権限を設定</strong><br>
-                    設定 → LINE → 権限 → カメラを許可<br>
-                    または「...」→「ブラウザで開く」
-                `;
-                labelContainer.appendChild(warningDiv);
-            }
-
-            // カメラAPIが利用可能かチェック
-            if (!isCameraAvailable()) {
-                const errorDiv = document.createElement("div");
-                errorDiv.style.cssText = "color: #ff0000; padding: 10px; margin: 5px 0; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px; font-size: 11px;";
-                errorDiv.innerHTML = `
-                    <strong>❌ カメラAPIが利用できません</strong><br>
-                    HTTPSでアクセスしてください
-                `;
-                labelContainer.appendChild(errorDiv);
-                if (startBtn) {
-                    startBtn.disabled = false;
-                    startBtn.textContent = "リハビリを始める";
-                }
-                return;
-            }
-            
             try {
+                console.log("init()関数が呼び出されました");
+                vConsole.log("init()関数が呼び出されました");
+                
+                labelContainer = document.getElementById("label-container");
+                const startBtn = document.getElementById("start-camera-btn");
+                const permissionBtn = document.getElementById("request-permission-btn");
+                const buttonContainer = document.getElementById("camera-button-container");
+                
+                // ボタンを無効化
+                if (startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = "読み込み中...";
+                }
+                
+                // LINEのWebViewかどうかをチェック
+                if (isLineWebView()) {
+                    const warningDiv = document.createElement("div");
+                    warningDiv.style.cssText = "color: #ff6600; padding: 10px; margin: 5px 0; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px; font-size: 11px;";
+                    warningDiv.innerHTML = `
+                        <strong>⚠️ カメラの権限を設定</strong><br>
+                        設定 → LINE → 権限 → カメラを許可<br>
+                        または「...」→「ブラウザで開く」
+                    `;
+                    labelContainer.appendChild(warningDiv);
+                }
+
+                // カメラAPIが利用可能かチェック
+                if (!isCameraAvailable()) {
+                    const errorDiv = document.createElement("div");
+                    errorDiv.style.cssText = "color: #ff0000; padding: 10px; margin: 5px 0; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px; font-size: 11px;";
+                    errorDiv.innerHTML = `
+                        <strong>❌ カメラAPIが利用できません</strong><br>
+                        HTTPSでアクセスしてください
+                    `;
+                    labelContainer.appendChild(errorDiv);
+                    if (startBtn) {
+                        startBtn.disabled = false;
+                        startBtn.textContent = "リハビリを始める";
+                    }
+                    return;
+                }
+                
+                // ============================================
+                // iOS/LIFF対策: カメラ起動を最優先（User Gestureの有効期限内に実行）
+                // ============================================
                 // ============================================
                 // iOS/LIFF対策: カメラ起動を最優先（User Gestureの有効期限内に実行）
                 // ============================================
@@ -571,7 +581,10 @@
                 // 10. モデル読み込み完了後に予測ループを開始
                 window.requestAnimationFrame(loop);
             } catch (error) {
+                const errorMsg = "エラー発生: " + (error.message || error.name || "不明なエラー");
                 console.error("初期化エラー:", error);
+                vConsole.error("初期化エラー:", error);
+                alert(errorMsg);
                 
                 // エラーの種類に応じたメッセージを表示
                 let errorMessage = "";
@@ -624,6 +637,12 @@
                 unifiedContainer.appendChild(progressBarDiv);
 
                 labelContainer.appendChild(unifiedContainer);
+            } catch (error) {
+                const errorMsg = "エラー発生: " + (error.message || error.name || "不明なエラー");
+                console.error("init()関数内のエラー:", error);
+                vConsole.error("init()関数内のエラー:", error);
+                alert(errorMsg);
+                throw error; // 外側のcatchブロックで処理されるように再スロー
             }
         }
 
@@ -813,36 +832,56 @@
             // スタートボタンのイベントハンドラ（clickとtouchstartの両方に対応）
             if (startBtn) {
                 const handleStart = function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    console.log("リハビリ開始ボタンが押されました");
-                    
-                    // スタートボタンを非表示
-                    if (startOverlay) {
-                        startOverlay.classList.add("hidden");
+                    try {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        console.log("リハビリ開始ボタンが押されました");
+                        vConsole.log("リハビリ開始ボタンが押されました");
+                        
+                        // ライブラリ読み込み待機チェック
+                        if (typeof tmImage === 'undefined') {
+                            const errorMsg = "AIの準備中です。少々お待ちください。";
+                            console.error(errorMsg);
+                            vConsole.error(errorMsg);
+                            alert(errorMsg);
+                            return;
+                        }
+                        
+                        // スタートボタンを非表示
+                        if (startOverlay) {
+                            startOverlay.classList.add("hidden");
+                        }
+                        
+                        // 右パネルを表示
+                        if (rightPanel) {
+                            rightPanel.classList.add("show");
+                        }
+                        
+                        // 10匹を1匹に減らす
+                        if (window.nodoguroGame) {
+                            window.nodoguroGame.reduceToSingleFish();
+                            // リハビリ開始を通知
+                            window.nodoguroGame.startRehabilitation();
+                        }
+                        
+                        // ユーザーアクション内でinit()を呼び出す（LINE内ブラウザ対応）
+                        // これによりAndroid版LINEブラウザのAutoplay Policyを回避
+                        init();
+                    } catch (error) {
+                        const errorMsg = "エラー発生: " + error.message;
+                        console.error(errorMsg, error);
+                        vConsole.error(errorMsg, error);
+                        alert(errorMsg);
                     }
-                    
-                    // 右パネルを表示
-                    if (rightPanel) {
-                        rightPanel.classList.add("show");
-                    }
-                    
-                    // 10匹を1匹に減らす
-                    if (window.nodoguroGame) {
-                        window.nodoguroGame.reduceToSingleFish();
-                        // リハビリ開始を通知
-                        window.nodoguroGame.startRehabilitation();
-                    }
-                    
-                    // ユーザーアクション内でinit()を呼び出す（LINE内ブラウザ対応）
-                    // これによりAndroid版LINEブラウザのAutoplay Policyを回避
-                    init();
                 };
                 
                 // clickイベントとtouchstartイベントの両方に対応（iPhone/Safari対策）
                 startBtn.addEventListener('click', handleStart);
                 startBtn.addEventListener('touchend', handleStart);
+            } else {
+                console.error("スタートボタンが見つかりません");
+                vConsole.error("スタートボタンが見つかりません");
             }
             
             // カメラ権限再試行ボタンのイベントハンドラ
