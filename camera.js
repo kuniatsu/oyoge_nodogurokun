@@ -111,12 +111,25 @@ class CameraModule {
 }
 
 // カメラモジュールを初期化（DOM読み込み後）
+// 注意: 現在の実装ではcamera.jsは使用されていません（tmImage.Webcamを使用）
+// このモジュールは将来の拡張用に保持されています
 document.addEventListener('DOMContentLoaded', () => {
-    // カメラ要素が存在する場合のみ初期化
-    if (document.getElementById('camera-video') && document.getElementById('camera-toggle')) {
-        window.cameraModule = new CameraModule();
-        console.log('カメラモジュールが利用可能です');
-    } else {
-        console.log('カメラ要素が見つからないため、カメラモジュールをスキップします');
+    // カメラ要素の存在確認（エラーログのみ、処理は中断しない）
+    const cameraVideo = document.getElementById('camera-video');
+    const cameraToggle = document.getElementById('camera-toggle');
+    
+    if (!cameraVideo) {
+        console.log('camera-video要素が見つかりません（現在の実装では使用されていません）');
     }
+    
+    if (!cameraToggle) {
+        console.log('camera-toggle要素が見つかりません（現在の実装では使用されていません）');
+    }
+    
+    // カメラモジュールは現在の実装では使用されていないため、初期化をスキップ
+    // 必要に応じて後で有効化可能
+    // if (cameraVideo && cameraToggle) {
+    //     window.cameraModule = new CameraModule();
+    //     console.log('カメラモジュールが利用可能です');
+    // }
 });
