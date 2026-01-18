@@ -199,11 +199,15 @@
 
         #label-container {
             width: 100%;
-            padding: 0;
+            padding: 8px;
             margin: 0;
             flex-shrink: 0;
             background-color: #f5f5f5;
-            overflow: visible;
+            overflow-y: auto;
+            overflow-x: hidden;
+            max-height: 150px;
+            font-size: 12px;
+            line-height: 1.4;
         }
 
         #label-container div {
@@ -377,7 +381,7 @@
 
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <script src="script.js"></script>
@@ -417,14 +421,11 @@
             // LINEのWebViewかどうかをチェック
             if (isLineWebView()) {
                 const warningDiv = document.createElement("div");
-                warningDiv.style.cssText = "color: #ff6600; padding: 15px; margin: 10px; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px;";
+                warningDiv.style.cssText = "color: #ff6600; padding: 10px; margin: 5px 0; background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px; font-size: 11px;";
                 warningDiv.innerHTML = `
-                    <strong>⚠️ カメラの権限を設定してください</strong><br>
-                    端末の設定からカメラの権限を許可してください：<br>
-                    1. 設定 → アプリ → LINE → 権限 → カメラを許可<br>
-                    2. または、右上の「...」メニューから「ブラウザで開く」を選択して外部ブラウザで開く<br>
-                    <br>
-                    <small>LINE内ブラウザでカメラを使用するには、端末の設定でカメラの権限を許可する必要があります。</small>
+                    <strong>⚠️ カメラの権限を設定</strong><br>
+                    設定 → LINE → 権限 → カメラを許可<br>
+                    または「...」→「ブラウザで開く」
                 `;
                 labelContainer.appendChild(warningDiv);
             }
@@ -432,11 +433,10 @@
             // カメラAPIが利用可能かチェック
             if (!isCameraAvailable()) {
                 const errorDiv = document.createElement("div");
-                errorDiv.style.cssText = "color: #ff0000; padding: 15px; margin: 10px; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px;";
+                errorDiv.style.cssText = "color: #ff0000; padding: 10px; margin: 5px 0; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px; font-size: 11px;";
                 errorDiv.innerHTML = `
                     <strong>❌ カメラAPIが利用できません</strong><br>
-                    このブラウザはカメラアクセスをサポートしていないか、HTTPSでアクセスされていません。<br>
-                    HTTPSのURLでアクセスしてください。
+                    HTTPSでアクセスしてください
                 `;
                 labelContainer.appendChild(errorDiv);
                 if (startBtn) {
@@ -447,30 +447,45 @@
             }
             
             try {
-                const modelURL = MODEL_PATH + "model.json";
-                const metadataURL = MODEL_PATH + "metadata.json";
-
-                console.log("モデルを読み込み中...", modelURL);
+                // ============================================
+                // iOS/LIFF対策: カメラ起動を最優先（User Gestureの有効期限内に実行）
+                // ============================================
+                console.log("カメラ権限をリクエスト中...（最優先）");
                 
-                // モデルとメタデータのロード
-                model = await tmImage.load(modelURL, metadataURL);
-                maxPredictions = model.getTotalClasses();
-                console.log("モデル読み込み成功。クラス数:", maxPredictions);
-
-                // Webカメラのセットアップ
-                const flip = true;
-                webcam = new tmImage.Webcam(360, 270, flip); // サイズを調整 (360x270)
+                // 1. まず明示的にgetUserMedia()を呼び出して権限を取得（ユーザー操作の権限が有効なうちに）
+                let cameraStream = null;
+                try {
+                    cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'user',
+                            width: { ideal: 360 },
+                            height: { ideal: 270 }
+                        }, 
+                        audio: false 
+                    });
+                    console.log("カメラ権限が許可されました");
+                } catch (permError) {
+                    console.error("カメラ権限エラー:", permError);
+                    throw permError; // エラーを再スローしてcatchブロックで処理
+                }
+                
+                // 2. Webカメラのセットアップ（権限取得直後に実行）
+            const flip = true;
+                webcam = new tmImage.Webcam(360, 270, flip);
                 console.log("カメラをセットアップ中...");
                 
                 // LINEのWebViewの場合はカメラセットアップをスキップ
                 if (isLineWebView()) {
+                    if (cameraStream) {
+                        cameraStream.getTracks().forEach(track => track.stop());
+                    }
                     throw new Error("端末の設定でカメラの権限を許可してください");
                 }
                 
-                await webcam.setup();
+                // 3. カメラを起動（既に取得したストリームを使用）
+            await webcam.setup();
                 
                 // iOS対策: video要素にplaysinline, muted, autoplay属性を確実に付与
-                // tmImage.Webcamは内部でvideo要素を使用しているため、setup()後にアクセス可能
                 if (webcam.video) {
                     webcam.video.setAttribute('playsinline', '');
                     webcam.video.setAttribute('muted', '');
@@ -491,39 +506,44 @@
                     });
                 }
                 
-                await webcam.play();
+            await webcam.play();
                 console.log("カメラ起動成功");
 
-                // ボタンコンテナを非表示にする
+                // 4. 取得したストリームを停止（webcamが独自にストリームを管理するため）
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+
+                // 5. ボタンコンテナを非表示にする
                 if (buttonContainer) {
                     buttonContainer.classList.add("hidden");
                 }
 
-                // WebカメラのキャンバスをDOMに追加
-                const container = document.getElementById("webcam-container");
-                container.appendChild(webcam.canvas);
+                // 6. WebカメラのキャンバスをDOMに追加
+            const container = document.getElementById("webcam-container");
+            container.appendChild(webcam.canvas);
 
-                // ガイドライン用のCanvasを作成して追加
-                const guideCanvas = document.createElement("canvas");
-                guideCanvas.id = "guide-canvas";
-                container.appendChild(guideCanvas);
+                // 7. ガイドライン用のCanvasを作成して追加
+            const guideCanvas = document.createElement("canvas");
+            guideCanvas.id = "guide-canvas";
+            container.appendChild(guideCanvas);
 
-                // コンテナのサイズに合わせてキャンバスを調整
-                function resizeCanvas() {
-                    const containerRect = container.getBoundingClientRect();
-                    guideCanvas.width = containerRect.width;
-                    guideCanvas.height = containerRect.height;
-                    drawGuide(guideCanvas);
-                }
+            // コンテナのサイズに合わせてキャンバスを調整
+            function resizeCanvas() {
+                const containerRect = container.getBoundingClientRect();
+                guideCanvas.width = containerRect.width;
+                guideCanvas.height = containerRect.height;
+                drawGuide(guideCanvas);
+            }
 
-                // 初期サイズ設定とリサイズ時の調整
-                resizeCanvas();
-                window.addEventListener('resize', resizeCanvas);
+            // 初期サイズ設定とリサイズ時の調整
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
 
-                // 統合プログレスバーを作成（1つだけ、ラベルなし）
+                // 8. 統合プログレスバーを作成（1つだけ、ラベルなし）
                 const unifiedContainer = document.createElement("div");
                 unifiedContainer.className = "unified-progress-container";
-                
+
                 // プログレスバー（左から右に緑が伸びる）
                 const progressBarDiv = document.createElement("div");
                 progressBarDiv.className = "progress-bar";
@@ -536,7 +556,19 @@
                 
                 labelContainer.appendChild(unifiedContainer);
 
-                // 予測ループの開始
+                // ============================================
+                // 9. カメラ起動後にモデルを読み込む（重い処理は後回し）
+                // ============================================
+                console.log("モデルを読み込み中...（カメラ起動後）");
+                const modelURL = MODEL_PATH + "model.json";
+                const metadataURL = MODEL_PATH + "metadata.json";
+                
+                // モデルとメタデータのロード
+                model = await tmImage.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+                console.log("モデル読み込み成功。クラス数:", maxPredictions);
+
+                // 10. モデル読み込み完了後に予測ループを開始
                 window.requestAnimationFrame(loop);
             } catch (error) {
                 console.error("初期化エラー:", error);
@@ -561,7 +593,7 @@
                 
                 // エラー時でもlabel-containerに要素を表示（デモ用）
                 const errorDiv = document.createElement("div");
-                errorDiv.style.cssText = "color: #ff0000; padding: 15px; margin: 10px; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px;";
+                errorDiv.style.cssText = "color: #ff0000; padding: 10px; margin: 5px 0; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px; font-size: 11px; word-wrap: break-word;";
                 errorDiv.innerHTML = `<strong>❌ エラー</strong><br>${errorMessage}`;
                 labelContainer.appendChild(errorDiv);
                 
@@ -590,7 +622,7 @@
                 progressFillDiv.style.width = "5%"; // デモ用：5%が「伸びてる」
                 progressBarDiv.appendChild(progressFillDiv);
                 unifiedContainer.appendChild(progressBarDiv);
-                
+
                 labelContainer.appendChild(unifiedContainer);
             }
         }
@@ -608,29 +640,29 @@
             }
 
             try {
-                const prediction = await model.predict(webcam.canvas);
+            const prediction = await model.predict(webcam.canvas);
 
-                let isBlowingDetected = false;
+            let isBlowingDetected = false;
                 let stretchingPercent = 0;
                 let notStretchingPercent = 0;
 
                 // 予測結果から「伸びてる」と「伸びてない」の確率を取得
-                for (let i = 0; i < maxPredictions; i++) {
+            for (let i = 0; i < maxPredictions; i++) {
                     if (i >= prediction.length) break;
                     
-                    const className = prediction[i].className;
-                    const probability = prediction[i].probability.toFixed(2); // 0.00 to 1.00
-                    const percent = Math.round(probability * 100);
+                const className = prediction[i].className;
+                const probability = prediction[i].probability.toFixed(2); // 0.00 to 1.00
+                const percent = Math.round(probability * 100);
 
-                    // デバッグ用ログ
-                    console.log(`クラス名: "${className}", 確率: ${percent}%`);
+                // デバッグ用ログ
+                console.log(`クラス名: "${className}", 確率: ${percent}%`);
 
                     // 「伸びてる」または「伸ばしてる」の確率を取得
                     if (className.includes("伸びてる") || className.includes("伸ばしてる")) {
                         stretchingPercent = percent;
                         if (percent >= 80) {
-                            console.log("吹き戻しを検出！", className, percent);
-                            isBlowingDetected = true;
+                    console.log("吹き戻しを検出！", className, percent);
+                    isBlowingDetected = true;
                         }
                     } else if (className.includes("伸びてない") || className.includes("伸ばしてない")) {
                         notStretchingPercent = percent;
@@ -641,12 +673,12 @@
                 const fillElement = document.getElementById("unified-progress-fill");
                 if (fillElement) {
                     fillElement.style.width = `${stretchingPercent}%`;
-                }
+            }
 
-                // ゲームにAI判定結果を通知
-                console.log("nodoguroGame:", nodoguroGame, "isBlowingDetected:", isBlowingDetected);
-                if (nodoguroGame) {
-                    nodoguroGame.setAIBlowing(isBlowingDetected);
+            // ゲームにAI判定結果を通知
+            console.log("nodoguroGame:", nodoguroGame, "isBlowingDetected:", isBlowingDetected);
+            if (nodoguroGame) {
+                nodoguroGame.setAIBlowing(isBlowingDetected);
                 }
             } catch (error) {
                 console.error("予測エラー:", error);

@@ -81,25 +81,33 @@ class NodoguroGame {
             }
         });
         
-        // タッチデバイス対応（画面全体で長押し）
+        // タッチデバイス対応（2本指タップ）
         // 画面全体にイベントリスナーを設定（bodyに直接設定）
         const touchTarget = document.body;
         
-        touchTarget.addEventListener('touchstart', (e) => {
+        // Safari対策: イベントリスナーを確実に登録（capture: trueで早期にキャッチ）
+        const touchStartHandler = (e) => {
             this.handleTouchStart(e);
-        }, { passive: false });
+        };
         
-        touchTarget.addEventListener('touchmove', (e) => {
+        const touchMoveHandler = (e) => {
             this.handleTouchMove(e);
-        }, { passive: false });
+        };
         
-        touchTarget.addEventListener('touchend', (e) => {
+        const touchEndHandler = (e) => {
             this.handleTouchEnd(e);
-        }, { passive: false });
+        };
         
-        touchTarget.addEventListener('touchcancel', (e) => {
+        const touchCancelHandler = (e) => {
             this.handleTouchEnd(e);
-        }, { passive: false });
+        };
+        
+        touchTarget.addEventListener('touchstart', touchStartHandler, { passive: false, capture: true });
+        touchTarget.addEventListener('touchmove', touchMoveHandler, { passive: false, capture: true });
+        touchTarget.addEventListener('touchend', touchEndHandler, { passive: false, capture: true });
+        touchTarget.addEventListener('touchcancel', touchCancelHandler, { passive: false, capture: true });
+        
+        console.log("タッチイベントリスナーを登録しました");
     }
     
     startSwimming() {
@@ -443,15 +451,20 @@ class NodoguroGame {
             return;
         }
         
+        console.log("touchstart - touches:", e.touches.length);
+        
         // 2本指タップを検出
         if (e.touches.length === 2) {
+            console.log("2本指タップを検出");
             // 2本指がタッチされたら、ぶくぶく状態を開始
             if (!this.isBubbling) {
+                console.log("ぶくぶく状態を開始");
                 this.isBubbling = true;
                 this.updateBubblingState();
             }
             // デフォルトの動作を防止（ピンチズーム防止など）
             e.preventDefault();
+            e.stopPropagation();
         } else if (e.touches.length === 1) {
             // 1本指の場合は位置を記録（移動検出用）
             const touch = e.touches[0];
@@ -470,37 +483,47 @@ class NodoguroGame {
         // 2本指タップ中はぶくぶく状態を維持
         if (e.touches.length === 2) {
             if (!this.isBubbling) {
+                console.log("touchmove - 2本指でぶくぶく状態を開始");
                 this.isBubbling = true;
                 this.updateBubblingState();
             }
             // デフォルトの動作を防止（ピンチズーム防止など）
             e.preventDefault();
+            e.stopPropagation();
         } else if (e.touches.length === 1 && this.isBubbling) {
             // 2本指から1本指になったら、ぶくぶく状態を停止
+            console.log("2本指から1本指になった - ぶくぶく状態を停止");
             this.isBubbling = false;
             this.updateBubblingState();
         }
     }
     
     handleTouchEnd(e) {
-        if (!e.touches || e.touches.length === 0) {
-            // すべての指が離れたら、ぶくぶく状態を停止
-            if (this.isBubbling) {
-                this.isBubbling = false;
-                this.updateBubblingState();
-            }
-        } else if (e.touches.length === 1) {
-            // 2本指から1本指になったら、ぶくぶく状態を停止
-            if (this.isBubbling) {
-                this.isBubbling = false;
-                this.updateBubblingState();
-            }
+        console.log("touchend - remaining touches:", e.changedTouches ? e.changedTouches.length : 0, "active touches:", e.touches ? e.touches.length : 0);
+        
+        // changedTouchesで離れた指を確認
+        const endedTouches = e.changedTouches ? e.changedTouches.length : 0;
+        const remainingTouches = e.touches ? e.touches.length : 0;
+        
+        // 2本指タップ中に1本指が離れた場合
+        if (endedTouches >= 1 && remainingTouches < 2 && this.isBubbling) {
+            console.log("2本指から1本以下になった - ぶくぶく状態を停止");
+            this.isBubbling = false;
+            this.updateBubblingState();
+        }
+        
+        // すべての指が離れた場合
+        if (remainingTouches === 0 && this.isBubbling) {
+            console.log("すべての指が離れた - ぶくぶく状態を停止");
+            this.isBubbling = false;
+            this.updateBubblingState();
         }
         
         // 状態をリセット
         this.touchStartPosition = null;
         
         e.preventDefault();
+        e.stopPropagation();
     }
     
     cancelLongPress() {
