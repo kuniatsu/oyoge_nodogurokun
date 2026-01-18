@@ -654,6 +654,43 @@ class NodoguroGame {
             isSuffering: false,
             swimDirection: 1
         }];
+        
+        // 初期状態で10匹表示する
+        this.createInitialFishes(10);
+    }
+    
+    createInitialFishes(count) {
+        // 既存の魚以外に追加で作成
+        for (let i = 1; i < count; i++) {
+            this.addNewFish();
+        }
+    }
+    
+    reduceToSingleFish() {
+        // 最初の1匹以外を削除
+        while (this.fishList.length > 1) {
+            const fish = this.fishList.pop();
+            if (fish.element && fish.element.parentNode) {
+                fish.element.parentNode.removeChild(fish.element);
+            }
+        }
+        
+        // 最初の1匹を中央に配置
+        if (this.fishList.length > 0) {
+            const firstFish = this.fishList[0];
+            if (this.aquarium) {
+                const aquariumRect = this.aquarium.getBoundingClientRect();
+                firstFish.position.x = aquariumRect.width / 2;
+                firstFish.position.y = aquariumRect.height / 2;
+                firstFish.targetPosition.x = aquariumRect.width / 2;
+                firstFish.targetPosition.y = aquariumRect.height / 2;
+                
+                if (firstFish.element) {
+                    firstFish.element.style.left = firstFish.position.x + 'px';
+                    firstFish.element.style.top = firstFish.position.y + 'px';
+                }
+            }
+        }
     }
     
     startCountdown() {
@@ -795,4 +832,5 @@ class NodoguroGame {
 let nodoguroGame = null;
 document.addEventListener('DOMContentLoaded', () => {
     nodoguroGame = new NodoguroGame();
+    window.nodoguroGame = nodoguroGame; // グローバルに設定
 });
