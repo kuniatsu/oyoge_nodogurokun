@@ -330,7 +330,7 @@
 </head>
 <body>
     <!-- バージョン表示 -->
-    <div id="version-display">v1.0.4</div>
+    <div id="version-display">v1.0.5</div>
 
     <!-- 画面向きロックオーバーレイ -->
     <div id="orientation-lock-overlay">
@@ -426,7 +426,8 @@
         }
 
         // モデルのロードとWebカメラのセットアップ
-        async function init() {
+        // グローバルスコープで定義（確実に参照できるように）
+        window.init = async function init() {
             try {
                 // カメラ起動プロセス開始のアラート（本番でも表示）
                 alert("カメラ起動プロセス開始");
@@ -437,7 +438,25 @@
                     vConsole.log("init()関数が呼び出されました");
                 }
                 
+                // label-containerの存在確認と動的作成（自己修復ロジック）
                 labelContainer = document.getElementById("label-container");
+                if (!labelContainer) {
+                    console.warn("label-containerが見つかりません。動的に作成します。");
+                    if (vConsole && typeof vConsole.warn === 'function') {
+                        vConsole.warn("label-containerが見つかりません。動的に作成します。");
+                    }
+                    labelContainer = document.createElement("div");
+                    labelContainer.id = "label-container";
+                    labelContainer.style.cssText = "max-height: 150px; overflow-y: auto; font-size: 12px; padding: 8px;";
+                    const rightPanel = document.getElementById("right-panel");
+                    if (rightPanel) {
+                        rightPanel.appendChild(labelContainer);
+                    } else {
+                        document.body.appendChild(labelContainer);
+                    }
+                }
+                
+                // その他の要素の取得（存在しない場合はnullを返すが、処理は継続）
                 const startBtn = document.getElementById("start-camera-btn");
                 const permissionBtn = document.getElementById("request-permission-btn");
                 const buttonContainer = document.getElementById("camera-button-container");
@@ -468,11 +487,15 @@
                         <strong>❌ カメラAPIが利用できません</strong><br>
                         HTTPSでアクセスしてください
                     `;
-                    labelContainer.appendChild(errorDiv);
+                    if (labelContainer) {
+                        labelContainer.appendChild(errorDiv);
+                    }
                     if (startBtn) {
                         startBtn.disabled = false;
                         startBtn.textContent = "リハビリを始める";
                     }
+                    // 早期リターンは削除せず、エラーを表示して処理を継続
+                    // ただし、カメラAPIが利用できない場合は処理を中断する必要があるため、returnを維持
                     return;
                 }
                 
@@ -624,7 +647,9 @@
                 progressBarDiv.appendChild(progressFillDiv);
                 unifiedContainer.appendChild(progressBarDiv);
                 
-                labelContainer.appendChild(unifiedContainer);
+                if (labelContainer) {
+                    labelContainer.appendChild(unifiedContainer);
+                }
 
                 // ============================================
                 // 9. カメラ起動後にモデルを読み込む（重い処理は後回し）
@@ -671,7 +696,9 @@
                 const errorDiv = document.createElement("div");
                 errorDiv.style.cssText = "color: #ff0000; padding: 10px; margin: 5px 0; background-color: #ffe6e6; border: 2px solid #ff0000; border-radius: 5px; font-size: 11px; word-wrap: break-word;";
                 errorDiv.innerHTML = `<strong>❌ エラー</strong><br>${errorMessage}`;
-                labelContainer.appendChild(errorDiv);
+                if (labelContainer) {
+                    labelContainer.appendChild(errorDiv);
+                }
                 
                 // カメラ権限が拒否された場合は再試行ボタンを表示
                 const permissionBtn = document.getElementById("request-permission-btn");
@@ -699,18 +726,11 @@
                 progressBarDiv.appendChild(progressFillDiv);
                 unifiedContainer.appendChild(progressBarDiv);
 
-                labelContainer.appendChild(unifiedContainer);
-            } catch (error) {
-                const errorMsg = "エラー発生: " + (error.message || error.name || "不明なエラー");
-                console.error("init()関数内のエラー:", error);
-                        // デバッグモードでのみ詳細ログを表示
-                        if (vConsole && typeof vConsole.error === 'function') {
-                            vConsole.error("init()関数内のエラー:", error);
-                        }
-                alert(errorMsg);
-                throw error; // 外側のcatchブロックで処理されるように再スロー
+                if (labelContainer) {
+                    labelContainer.appendChild(unifiedContainer);
+                }
             }
-        }
+        };
 
         async function loop() {
             webcam.update();
